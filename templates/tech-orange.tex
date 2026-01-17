@@ -1,0 +1,169 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{xcolor}
+\usepackage{tabularx}
+
+\setlength{\footskip}{0.5in}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Margins
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-0.6in}
+\addtolength{\textheight}{1.2in}
+
+\urlstyle{same}
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Define custom orange
+\definecolor{techorange}{RGB}{255, 87, 34}
+
+% Section formatting
+\titleformat{\section}{
+    \vspace{-4pt}\scshape\raggedright\large
+}{}{0em}{}[\color{techorange}\titlerule \vspace{-5pt}]
+
+\pdfgentounicode=1
+
+% Custom commands
+\newcommand{\resumeItem}[1]{
+    \item\small{
+        {#1 \vspace{-2pt}}
+    }
+}
+
+\newcommand{\resumeSubheading}[4]{
+    \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+        \textbf{#1} & #2 \\
+        \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+        \small#1 & #2 \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.15in]}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+\begin{document}
+
+%----------HEADING----------
+\begin{center}
+    \textbf{\Huge \scshape \textcolor{techorange}{Your Name}} \\ \vspace{1pt}
+    \small{DevOps Engineer | Cloud Architecture | Automation} \\ \vspace{1pt}
+    \href{mailto:your.email@example.com}{\underline{your.email@example.com}} 
+    $|$ \underline{+1 234 567 8900} 
+    $|$ \href{https://linkedin.com/in/yourprofile}{\underline{LinkedIn}} 
+    $|$ \href{https://github.com/yourprofile}{\underline{GitHub}} \\
+    \small{City, State 12345}
+\end{center}
+
+%-----------SUMMARY-----------
+\section{\textcolor{techorange}{Summary}}
+\begin{itemize}[leftmargin=0in, label={}]
+    \small{\item{
+        DevOps Engineer with 4+ years of experience automating infrastructure and optimizing deployment pipelines. Expert in containerization, orchestration, and cloud platforms. Passionate about building reliable, scalable systems that enable rapid software delivery.
+    }}
+\end{itemize}
+
+%-----------SKILLS-----------
+\section{\textcolor{techorange}{Technical Skills}}
+\begin{itemize}[leftmargin=0in, label={}]
+    \small{\item{
+        \textbf{Cloud Platforms}{: AWS (EC2, ECS, Lambda, RDS, S3), Azure, GCP} \\
+        \textbf{Containers \& Orchestration}{: Docker, Kubernetes, Helm, Docker Swarm} \\
+        \textbf{CI/CD}{: Jenkins, GitLab CI, GitHub Actions, ArgoCD, CircleCI} \\
+        \textbf{Infrastructure as Code}{: Terraform, CloudFormation, Ansible, Pulumi} \\
+        \textbf{Monitoring}{: Prometheus, Grafana, ELK Stack, Datadog, New Relic} \\
+        \textbf{Scripting}{: Python, Bash, PowerShell, Go}
+    }}
+\end{itemize}
+
+%-----------EXPERIENCE-----------
+\section{\textcolor{techorange}{Experience}}
+\resumeSubHeadingListStart
+
+\resumeSubheading
+{Senior DevOps Engineer}{Jan 2021 -- Present}
+{Tech Startup}{City, State}
+\resumeItemListStart
+\resumeItem{Architected Kubernetes infrastructure serving 2M+ users with 99.99\% uptime.}
+\resumeItem{Built fully automated CI/CD pipelines reducing deployment time from 4 hours to 10 minutes.}
+\resumeItem{Implemented Infrastructure as Code with Terraform, managing 200+ AWS resources across 5 environments.}
+\resumeItem{Reduced cloud costs by 40\% through optimization of resource usage and auto-scaling policies.}
+\resumeItem{Established monitoring and alerting with Prometheus/Grafana, reducing MTTR by 60\%.}
+\resumeItemListEnd
+
+\resumeSubheading
+{DevOps Engineer}{Jun 2019 -- Dec 2020}
+{Enterprise Software Co.}{City, State}
+\resumeItemListStart
+\resumeItem{Migrated legacy applications to Docker containers and deployed to Kubernetes clusters.}
+\resumeItem{Set up GitOps workflows with ArgoCD for continuous deployment and configuration management.}
+\resumeItem{Created Ansible playbooks for automated server provisioning and configuration.}
+\resumeItem{Implemented security best practices including secrets management with HashiCorp Vault.}
+\resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+%-----------PROJECTS-----------
+\section{\textcolor{techorange}{Projects}}
+\resumeSubHeadingListStart
+
+\resumeProjectHeading
+{\textbf{Multi-Region Kubernetes Platform} $|$ \textit{AWS, Kubernetes, Terraform, ArgoCD}}{}
+\resumeItemListStart
+\resumeItem{Designed and deployed multi-region Kubernetes platform across 3 AWS regions for disaster recovery.}
+\resumeItem{Implemented automated failover and traffic routing with AWS Route 53 and ALB.}
+\resumeItem{Built centralized logging and monitoring solution processing 500GB+ logs daily.}
+\resumeItemListEnd
+
+\resumeProjectHeading
+{\textbf{Infrastructure Automation Framework} $|$ \textit{Terraform, Python, GitHub Actions}}{}
+\resumeItemListStart
+\resumeItem{Created reusable Terraform modules for common infrastructure patterns.}
+\resumeItem{Built CLI tool in Python for streamlined infrastructure provisioning and management.}
+\resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+%-----------CERTIFICATIONS-----------
+\section{\textcolor{techorange}{Certifications}}
+\resumeSubHeadingListStart
+\resumeProjectHeading
+{\textbf{AWS Certified Solutions Architect - Professional}}{2023}
+\resumeProjectHeading
+{\textbf{Certified Kubernetes Administrator (CKA)}}{2022}
+\resumeProjectHeading
+{\textbf{HashiCorp Certified: Terraform Associate}}{2021}
+\resumeSubHeadingListEnd
+
+\end{document}

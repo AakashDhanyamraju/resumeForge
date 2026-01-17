@@ -1,0 +1,164 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{xcolor}
+\usepackage{tabularx}
+
+\setlength{\footskip}{0.5in}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Margins
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-0.6in}
+\addtolength{\textheight}{1.2in}
+
+\urlstyle{same}
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Section formatting
+\titleformat{\section}{
+    \vspace{-4pt}\scshape\raggedright\large
+}{}{0em}{}[\color{NavyBlue}\titlerule \vspace{-5pt}]
+
+\pdfgentounicode=1
+
+% Custom commands
+\newcommand{\resumeItem}[1]{
+    \item\small{
+        {#1 \vspace{-2pt}}
+    }
+}
+
+\newcommand{\resumeSubheading}[4]{
+    \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+        \textbf{#1} & #2 \\
+        \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+        \small#1 & #2 \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.15in]}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+\begin{document}
+
+%----------HEADING----------
+\begin{center}
+    \textbf{\Huge \scshape \textcolor{NavyBlue}{Your Name}} \\ \vspace{1pt}
+    \small{Software Engineer | Python $\cdot$ JavaScript $\cdot$ Cloud} \\ \vspace{1pt}
+    \href{mailto:your.email@example.com}{\underline{your.email@example.com}} 
+    $|$ \underline{+1 234 567 8900} 
+    $|$ \href{https://linkedin.com/in/yourprofile}{\underline{LinkedIn}} 
+    $|$ \href{https://github.com/yourprofile}{\underline{GitHub}} \\
+    \small{City, State 12345}
+\end{center}
+
+%-----------SUMMARY-----------
+\section{\textcolor{NavyBlue}{Professional Summary}}
+\begin{itemize}[leftmargin=0in, label={}]
+    \small{\item{
+        Results-driven Software Engineer with 3+ years of experience building scalable applications. Expertise in full-stack development, cloud architecture, and agile methodologies. Proven track record of delivering high-quality solutions that improve business outcomes.
+    }}
+\end{itemize}
+
+%-----------EDUCATION-----------
+\section{\textcolor{NavyBlue}{Education}}
+\resumeSubHeadingListStart
+\resumeSubheading
+{Bachelor of Science in Computer Science}{Graduated May 2021}
+{University Name}{City, State}
+\resumeItemListStart
+\resumeItem{GPA: 3.8/4.0}
+\resumeItem{Relevant Coursework: Data Structures, Algorithms, Database Systems, Software Engineering}
+\resumeItemListEnd
+\resumeSubHeadingListEnd
+
+%-----------SKILLS-----------
+\section{\textcolor{NavyBlue}{Technical Skills}}
+\begin{itemize}[leftmargin=0in, label={}]
+    \small{\item{
+        \textbf{Languages}{: Python, JavaScript, TypeScript, Java, SQL, HTML/CSS} \\
+        \textbf{Frameworks}{: React, Node.js, Express, Django, Flask, Spring Boot} \\
+        \textbf{Databases}{: PostgreSQL, MySQL, MongoDB, Redis} \\
+        \textbf{Cloud \& DevOps}{: AWS (EC2, S3, Lambda), Docker, Kubernetes, CI/CD, Git} \\
+        \textbf{Tools}{: JIRA, Confluence, Postman, VS Code, IntelliJ}
+    }}
+\end{itemize}
+
+%-----------EXPERIENCE-----------
+\section{\textcolor{NavyBlue}{Professional Experience}}
+\resumeSubHeadingListStart
+
+\resumeSubheading
+{Senior Software Engineer}{Jun 2021 -- Present}
+{Tech Company Inc.}{City, State}
+\resumeItemListStart
+\resumeItem{Architected and deployed microservices handling 1M+ daily requests, reducing response time by 40\%.}
+\resumeItem{Led team of 4 engineers in developing cloud-native applications using AWS, Docker, and Kubernetes.}
+\resumeItem{Implemented CI/CD pipelines reducing deployment time from 2 hours to 15 minutes.}
+\resumeItem{Mentored junior developers and conducted code reviews to maintain high code quality standards.}
+\resumeItemListEnd
+
+\resumeSubheading
+{Software Engineer}{Jan 2019 -- May 2021}
+{Startup Solutions}{City, State}
+\resumeItemListStart
+\resumeItem{Developed RESTful APIs serving 500K+ users using Node.js and PostgreSQL.}
+\resumeItem{Built responsive web applications with React, improving user engagement by 35\%.}
+\resumeItem{Collaborated with product team to design and implement new features in agile sprints.}
+\resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+%-----------PROJECTS-----------
+\section{\textcolor{NavyBlue}{Projects}}
+\resumeSubHeadingListStart
+
+\resumeProjectHeading
+{\textbf{E-Commerce Platform} $|$ \textit{React, Node.js, MongoDB, AWS}}{}
+\resumeItemListStart
+\resumeItem{Built full-stack e-commerce platform with payment integration and inventory management.}
+\resumeItem{Implemented real-time order tracking and customer notifications using WebSockets.}
+\resumeItem{Deployed on AWS with auto-scaling, handling 10K+ concurrent users.}
+\resumeItemListEnd
+
+\resumeProjectHeading
+{\textbf{Analytics Dashboard} $|$ \textit{Python, Flask, PostgreSQL, D3.js}}{}
+\resumeItemListStart
+\resumeItem{Created data visualization dashboard processing 100GB+ of data daily.}
+\resumeItem{Built ETL pipelines with Apache Airflow for automated data processing.}
+\resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+\end{document}

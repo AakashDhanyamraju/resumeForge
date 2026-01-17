@@ -1,0 +1,35 @@
+# Development Dockerfile with LaTeX
+FROM texlive/texlive:latest
+
+# Install Bun
+RUN apt-get update && apt-get install -y \
+    curl \
+    unzip \
+    git \
+    && curl -fsSL https://bun.sh/install | bash \
+    && mv /root/.bun/bin/bun /usr/local/bin/bun \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json bun.lockb* ./
+COPY client/package.json ./client/
+
+# Install dependencies
+RUN bun install
+
+# Copy source files
+COPY . .
+
+# Create temp directory
+RUN mkdir -p /app/temp
+
+# Expose ports
+EXPOSE 3000
+EXPOSE 5173
+
+# Default command (can be overridden)
+CMD ["bun", "run", "dev"]
+

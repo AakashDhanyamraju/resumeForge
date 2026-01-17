@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: resume-maker-backend
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres.bofeuhmhuhmsstiegeyp:xO2f21L3VE81r0UP@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-placeholder-google-client-id}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-placeholder-google-client-secret}
+      - JWT_SECRET=${JWT_SECRET:-placeholder-jwt-secret-change-this}
+      - SESSION_COOKIE_NAME=resume_session
+    volumes:
+      - ./templates:/app/templates:ro
+      - temp-data:/app/temp
+      - frontend-dist:/shared-frontend
+    networks:
+      - resume-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/api/templates" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    entrypoint: [ "sh", "-c" ]
+    command:
+      - |
+        echo "Copying frontend files to shared volume..."
+        cp -r /app/client/dist/* /shared-frontend/ 2>/dev/null || true
+        echo "Starting backend server..."
+        exec bun run src/server.ts
+
+  nginx:
+    image: nginx:alpine
+    container_name: resume-maker-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - frontend-dist:/usr/share/nginx/html:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - resume-network
+    restart: unless-stopped
+    # Wait a bit for frontend files to be copied
+    command: sh -c "sleep 2 && nginx -g 'daemon off;'"
+
+volumes:
+  temp-data:
+  frontend-dist:
+
+
+networks:
+  resume-network:
+    driver: bridge

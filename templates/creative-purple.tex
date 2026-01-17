@@ -1,0 +1,175 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{xcolor}
+\usepackage{tabularx}
+
+\setlength{\footskip}{0.5in}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Margins
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-0.6in}
+\addtolength{\textheight}{1.2in}
+
+\urlstyle{same}
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Define purple
+\definecolor{softpurple}{RGB}{123, 31, 162}
+
+% Section formatting
+\titleformat{\section}{
+    \vspace{-4pt}\scshape\raggedright\large
+}{}{0em}{}[\color{softpurple}\titlerule \vspace{-5pt}]
+
+\pdfgentounicode=1
+
+% Custom commands
+\newcommand{\resumeItem}[1]{
+    \item\small{
+        {#1 \vspace{-2pt}}
+    }
+}
+
+\newcommand{\resumeSubheading}[4]{
+    \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+        \textbf{#1} & #2 \\
+        \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+        \small#1 & #2 \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.15in]}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+\begin{document}
+
+%----------HEADING----------
+\begin{center}
+    \textbf{\Huge \scshape \textcolor{softpurple}{Your Name}} \\ \vspace{1pt}
+    \small{Product Designer | UX/UI | User Research} \\ \vspace{1pt}
+    \href{mailto:your.email@example.com}{\underline{your.email@example.com}} 
+    $|$ \underline{+1 234 567 8900} 
+    $|$ \href{https://linkedin.com/in/yourprofile}{\underline{LinkedIn}} 
+    $|$ \href{https://dribbble.com/yourprofile}{\underline{Dribbble}} 
+    $|$ \href{https://yourportfolio.com}{\underline{Portfolio}} \\
+    \small{City, State 12345}
+\end{center}
+
+%-----------SUMMARY-----------
+\section{\textcolor{softpurple}{About}}
+\begin{itemize}[leftmargin=0in, label={}]
+    \small{\item{
+        Creative Product Designer with 5+ years crafting intuitive digital experiences. Passionate about user-centered design, solving complex problems, and bridging the gap between user needs and business goals. Experienced in leading design projects from research to delivery.
+    }}
+\end{itemize}
+
+%-----------SKILLS-----------
+\section{\textcolor{softpurple}{Skills}}
+\begin{itemize}[leftmargin=0in, label={}]
+    \small{\item{
+        \textbf{Design Tools}{: Figma, Sketch, Adobe XD, Adobe Creative Suite, Framer, Principle} \\
+        \textbf{Prototyping}{: InVision, Framer, ProtoPie, After Effects for motion design} \\
+        \textbf{Research}{: User Interviews, Usability Testing, A/B Testing, Analytics (GA4, Mixpanel)} \\
+        \textbf{Front-End}{: HTML, CSS, React (basic), Design Systems, Responsive Design} \\
+        \textbf{Collaboration}{: Jira, Miro, FigJam, Notion, Confluence}
+    }}
+\end{itemize}
+
+%-----------EXPERIENCE-----------
+\section{\textcolor{softpurple}{Experience}}
+\resumeSubHeadingListStart
+
+\resumeSubheading
+{Senior Product Designer}{Mar 2021 -- Present}
+{SaaS Company}{City, State}
+\resumeItemListStart
+\resumeItem{Led end-to-end design for enterprise dashboard serving 50K+ users, increasing user satisfaction by 45\%.}
+\resumeItem{Conducted user research sessions with 100+ customers, translating insights into actionable design improvements.}
+\resumeItem{Built and maintained design system used across 15+ products, reducing design-to-dev handoff time by 60\%.}
+\resumeItem{Collaborated with PM and engineering teams in agile environment, shipping 20+ features quarterly.}
+\resumeItem{Mentored 3 junior designers, establishing design critique process and best practices.}
+\resumeItemListEnd
+
+\resumeSubheading
+{Product Designer}{Jun 2019 -- Feb 2021}
+{Tech Startup}{City, State}
+\resumeItemListStart
+\resumeItem{Designed mobile-first experience for iOS and Android apps with 500K+ downloads.}
+\resumeItem{Conducted competitive analysis and user testing to optimize conversion funnel, improving signup rate by 30\%.}
+\resumeItem{Created high-fidelity prototypes and interactive mockups to communicate design vision.}
+\resumeItem{Worked closely with developers to ensure pixel-perfect implementation.}
+\resumeItemListEnd
+
+\resumeSubheading
+{UX Designer}{Jan 2018 -- May 2019}
+{Digital Agency}{City, State}
+\resumeItemListStart
+\resumeItem{Designed websites and digital products for clients in healthcare, finance, and e-commerce.}
+\resumeItem{Led user research and usability testing sessions to validate design decisions.}
+\resumeItem{Created wireframes, user flows, and information architecture for complex web applications.}
+\resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+%-----------PROJECTS-----------
+\section{\textcolor{softpurple}{Featured Work}}
+\resumeSubHeadingListStart
+
+\resumeProjectHeading
+{\textbf{Healthcare Patient Portal Redesign}}{}
+\resumeItemListStart
+\resumeItem{Redesigned patient portal for major hospital system, improving accessibility and ease of appointment booking.}
+\resumeItem{Conducted 15+ user interviews and usability tests with patients aged 25-75.}
+\resumeItem{Reduced task completion time by 40\% and increased patient engagement by 25\%.}
+\resumeItemListEnd
+
+\resumeProjectHeading
+{\textbf{Financial Dashboard for Investors}}{}
+\resumeItemListStart
+\resumeItem{Designed data-heavy dashboard for investment platform managing \$5B+ in assets.}
+\resumeItem{Created custom data visualizations and interactive charts for portfolio analytics.}
+\resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+%-----------EDUCATION-----------
+\section{\textcolor{softpurple}{Education}}
+\resumeSubHeadingListStart
+\resumeSubheading
+{Bachelor of Fine Arts in Graphic Design}{Graduated May 2017}
+{Art Institute}{City, State}
+\resumeSubHeadingListEnd
+
+\end{document}

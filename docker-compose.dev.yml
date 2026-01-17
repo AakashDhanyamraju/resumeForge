@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: resume-maker-dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/client/node_modules
+      - temp-data:/app/temp
+    ports:
+      - "3000:3000"
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+    command: sh -c "bun run dev & cd client && bun run dev"
+    networks:
+      - resume-network
+    restart: unless-stopped
+
+volumes:
+  temp-data:
+
+networks:
+  resume-network:
+    driver: bridge
+

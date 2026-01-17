@@ -1,0 +1,157 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{xcolor}
+\usepackage{tabularx}
+
+\setlength{\footskip}{0.5in}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Margins
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-0.6in}
+\addtolength{\textheight}{1.2in}
+
+\urlstyle{same}
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Section formatting - minimal gray
+\titleformat{\section}{
+    \vspace{-4pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black!70}\titlerule \vspace{-5pt}]
+
+\pdfgentounicode=1
+
+% Custom commands
+\newcommand{\resumeItem}[1]{
+    \item\small{
+        {#1 \vspace{-2pt}}
+    }
+}
+
+\newcommand{\resumeSubheading}[4]{
+    \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+        \textbf{#1} & #2 \\
+        \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+        \small#1 & #2 \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.15in]}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+\begin{document}
+
+%----------HEADING----------
+\begin{center}
+    \textbf{\Huge \scshape Your Name} \\ \vspace{1pt}
+    \small{Business Analyst | Data Analytics | Strategy} \\ \vspace{1pt}
+    \href{mailto:your.email@example.com}{\underline{your.email@example.com}} 
+    $|$ \underline{+1 234 567 8900} 
+    $|$ \href{https://linkedin.com/in/yourprofile}{\underline{LinkedIn}} \\
+    \small{City, State 12345}
+\end{center}
+
+%-----------SUMMARY-----------
+\section{Professional Summary}
+\begin{itemize}[leftmargin=0in, label={}]
+    \small{\item{
+        Strategic Business Analyst with 5+ years of experience driving data-driven decision making. Expertise in business intelligence, financial modeling, and stakeholder management. Track record of delivering insights that increase revenue and reduce operational costs.
+    }}
+\end{itemize}
+
+%-----------EDUCATION-----------
+\section{Education}
+\resumeSubHeadingListStart
+\resumeSubheading
+{Master of Business Administration (MBA)}{Graduated May 2019}
+{Business School}{City, State}
+\resumeItemListStart
+\resumeItem{Concentration: Finance and Analytics}
+\resumeItem{GPA: 3.9/4.0}
+\resumeItemListEnd
+
+\resumeSubheading
+{Bachelor of Science in Economics}{Graduated May 2017}
+{University Name}{City, State}
+\resumeSubHeadingListEnd
+
+%-----------SKILLS-----------
+\section{Core Competencies}
+\begin{itemize}[leftmargin=0in, label={}]
+    \small{\item{
+        \textbf{Business Analysis}{: Requirements Gathering, Process Mapping, Gap Analysis, UAT} \\
+        \textbf{Data Analytics}{: SQL, Python, R, Excel (Advanced), Tableau, Power BI} \\
+        \textbf{Project Management}{: Agile, Scrum, Waterfall, JIRA, MS Project} \\
+        \textbf{Financial Modeling}{: Valuation, Forecasting, Scenario Analysis, ROI Analysis} \\
+        \textbf{Tools}{: Salesforce, SAP, Oracle, Google Analytics}
+    }}
+\end{itemize}
+
+%-----------EXPERIENCE-----------
+\section{Professional Experience}
+\resumeSubHeadingListStart
+
+\resumeSubheading
+{Senior Business Analyst}{Mar 2020 -- Present}
+{Fortune 500 Company}{City, State}
+\resumeItemListStart
+\resumeItem{Led cross-functional team in $10M digital transformation project, delivering 25\% efficiency gains.}
+\resumeItem{Developed financial models and business cases that secured \$5M in funding for strategic initiatives.}
+\resumeItem{Created executive dashboards using Tableau, enabling real-time visibility into KPIs.}
+\resumeItem{Conducted stakeholder interviews and requirements gathering for enterprise-wide CRM implementation.}
+\resumeItemListEnd
+
+\resumeSubheading
+{Business Analyst}{Jun 2017 -- Feb 2020}
+{Consulting Firm}{City, State}
+\resumeItemListStart
+\resumeItem{Performed market research and competitive analysis for clients in healthcare and finance sectors.}
+\resumeItem{Built data models and reports using SQL and Python, reducing manual reporting time by 60\%.}
+\resumeItem{Facilitated workshops with C-level executives to align business strategy with IT initiatives.}
+\resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+%-----------CERTIFICATIONS-----------
+\section{Certifications}
+\resumeSubHeadingListStart
+\resumeProjectHeading
+{\textbf{Certified Business Analysis Professional (CBAP)}}{2021}
+\resumeProjectHeading
+{\textbf{Project Management Professional (PMP)}}{2020}
+\resumeProjectHeading
+{\textbf{AWS Certified Cloud Practitioner}}{2022}
+\resumeSubHeadingListEnd
+
+\end{document}

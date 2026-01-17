@@ -1,0 +1,195 @@
+\documentclass[a4paper,20pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{xcolor}
+\usepackage{tabularx}
+\input{glyphtounicode}
+\setlength{\footskip}{0.5in}
+\pagestyle{fancy}
+\fancyhf{} % clear all header and footer fields
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Adjust margins
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-0.6in}
+\addtolength{\textheight}{1.2in}
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Sections formatting
+\titleformat{\section}{
+    \vspace{-4pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+% Ensure that generate pdf is machine readable/ATS parsable
+\pdfgentounicode=1
+
+%-------------------------
+% Custom commands
+\newcommand{\resumeItem}[1]{
+    \item\small{
+        {#1 \vspace{-2pt}}
+    }
+}
+
+\newcommand{\resumeSubheading}[4]{
+    \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+        \textbf{#1} & #2 \\
+        \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubSubheading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+        \textit{\small#1} & \textit{\small #2} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+        \small#1 & #2 \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0in,
+            label={}]}
+        \newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.15in]}
+        \newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+\newcommand{\locState}{Karnataka }
+\newcommand{\locCity}{Bengaluru}
+%-------------------------------------------
+%%%%%%  RESUME STARTS HERE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\vspace{-10pt}
+\begin{document}
+
+%----------HEADING----------
+\vspace{-30pt}
+\begin{center}
+    \textbf {\Huge \scshape \textcolor{MidnightBlue}{Aakash Dhanyamraju}} \\ \vspace{1pt}
+    \small{Full Stack Developer | React $\cdot$ Node.js $\cdot$ AWS} \\ \vspace{1pt}
+    \href{mailto:aakashdhanyamraju425@gmail.com}{\underline{aakashdhanyamraju425@gmail.com}} 
+    $|$ \underline{+91 79951 94074} 
+    $|$ \href{http://www.linkedin.com/in/aakashdhanyamraju}{\underline{LinkedIn}} 
+    $|$ \href{https://github.com/AakashDhanyamraju}{\underline{GitHub}} 
+    $|$ \href{https://github.com/AakashDhanyamraju/talktoAD}{\underline{Portfolio}} \\
+   
+    \small{Bengaluru, Karnataka 560020}
+\end{center}
+\vspace{-15pt}
+
+%-----------SUMMARY-----------
+\section{\textcolor{MidnightBlue}{Summary}}
+\vspace{2pt}
+\begin{itemize}[leftmargin=0in, label={}]
+    \small{\item{
+        Full Stack Developer with 2+ years of experience building scalable web applications using \textbf{React}, \textbf{Node.js}, and \textbf{AWS}. Proven track record delivering production systems for Fortune 500 clients including Intel, Wipro, and Mondelēz. Skilled in REST API design, database optimization (PostgreSQL, MongoDB, DynamoDB), and cloud deployment. Background in AI/ML enables building intelligent features like recommendation engines, search optimization, and NLP-powered interfaces.
+    }}
+\end{itemize}
+% \vspace{-5pt}
+
+%-----------EDUCATION-----------
+\section {\textcolor{MidnightBlue}{Education}}
+\resumeSubHeadingListStart
+\resumeSubheading
+{Bachelor's Degree, Computer Science}{Graduated May 2023}
+{Gandhi Institute of Technology and Management (GITAM)}{Visakhapatnam, Andhra Pradesh}
+\resumeSubHeadingListEnd
+
+%-----------SKILLS-----------
+\section{\textcolor{MidnightBlue}{Skills}}
+\begin{itemize}[leftmargin=0in, label={}]
+    \small{\item{
+        \textbf{Frontend}{: React.js, Next.js, TypeScript, JavaScript (ES6+), HTML5, CSS3, Tailwind CSS, Responsive Design} \\
+        \textbf{Backend}{: Node.js, Express.js, REST APIs, GraphQL, WebSockets, JWT Authentication, Python} \\
+        \textbf{Databases}{: PostgreSQL, MySQL, MongoDB, Redis, DynamoDB, Supabase, Database Design \& Optimization} \\
+        \textbf{Cloud \& DevOps}{: AWS (S3, EC2, Lambda, Elastic Beanstalk), Docker, GitHub Actions, CI/CD Pipelines} \\
+        \textbf{Testing \& Tools}{: Jest, Postman, Git, GitHub, Bitbucket, JIRA, Elasticsearch} \\
+        \textbf{AI/ML Integration}{: LLMs, RAG, NLP, Prompt Engineering, ML-powered Features} \\
+    }}
+\end{itemize}
+
+%-----------EXPERIENCE-----------
+\section{\textcolor{MidnightBlue}{Experience}}
+\resumeSubHeadingListStart
+
+\resumeSubheading
+{Applied AI Engineer}{May 2023 -- Current}
+{Avaamo Technologies}{Bengaluru, Karnataka}
+\resumeItemListStart
+\resumeItem{Architected and deployed full-stack web applications using \textbf{React.js} frontend and \textbf{Node.js/Express} backend for Fortune 500 clients including \textbf{Intel}, \textbf{Wipro}, \textbf{Mondelēz}, and \textbf{UCHealth}, achieving \textbf{99.9\% uptime}.}
+\resumeItem{Designed and implemented \textbf{RESTful APIs} handling \textbf{50K+ daily requests}, with \textbf{PostgreSQL} for persistent storage and \textbf{Redis} for session caching and performance optimization.}
+\resumeItem{Built scalable multi-tenant SaaS architectures, reducing page load times by \textbf{40\%} through code splitting, lazy loading, and database query optimization.}
+\resumeItem{Deployed cloud-native applications on \textbf{AWS} (S3, DynamoDB, EC2, Lambda, Elastic Beanstalk) with \textbf{Docker} containerization and \textbf{CI/CD pipelines} via GitHub Actions.}
+\resumeItem{Integrated \textbf{AI/NLP features} into web applications, including intelligent search, content recommendations, and automated workflows using LLM APIs.}
+\resumeItem{Led code reviews and mentored junior developers, establishing best practices for React component architecture and Node.js API design patterns.}
+\resumeItemListEnd
+
+\resumeSubheading
+{Full Stack Developer Intern}{Aug 2022 -- Apr 2023}
+{Lap Technos and Services}{Remote}
+\resumeItemListStart
+\resumeItem{Built and maintained a large-scale social media platform using \textbf{Spring Boot} backend and \textbf{React} frontend, serving \textbf{500K+ users} with \textbf{PostgreSQL} database handling \textbf{2M+ records}.}
+\resumeItem{Implemented RESTful APIs for user authentication, feed generation, and real-time notifications using \textbf{WebSockets}, reducing API response times by \textbf{35\%}.}
+\resumeItem{Developed ML-powered recommendation engine and content moderation system, improving user engagement by \textbf{25\%}.}
+\resumeItemListEnd
+
+\resumeSubheading
+{Full Stack Developer Intern}{Jul 2022 -- Oct 2022}
+{Data Vector Pvt Ltd.}{Remote}
+\resumeItemListStart
+\resumeItem{Developed a full-stack photography showcase platform with \textbf{React.js} frontend and \textbf{Node.js/Express} backend, featuring role-based dashboards for users, jury, and admins.}
+\resumeItem{Built secure \textbf{REST APIs} with \textbf{JWT authentication}, image upload handling via \textbf{AWS S3}, and \textbf{MongoDB} for data persistence, supporting \textbf{10K+ submissions}.}
+\resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+%-----------PROJECTS-----------
+\section {\textcolor{MidnightBlue}{Projects}}
+\resumeSubHeadingListStart
+
+\resumeProjectHeading
+{\textbf{Pick-A-Pad AI} $|$ \textit{React.js, Node.js, Express, PostgreSQL, Supabase, REST APIs, JWT}}{}
+
+\resumeItemListStart
+\resumeItem{Architected a full-stack tenant screening platform in collaboration with Rice University, featuring \textbf{React} frontend, \textbf{Node.js/Express} backend, and \textbf{PostgreSQL} database managing \textbf{2.9K+ property units}.}
+\resumeItem{Built secure \textbf{RESTful APIs} with \textbf{JWT authentication} for credit bureau integrations, implementing role-based access control (RBAC) for tenants, landlords, and admins under SOC 2 compliance.}
+\resumeItem{Integrated \textbf{LLM-powered} data parsing for automated document analysis and risk assessment, reducing manual review time by \textbf{60\%}.}
+\resumeItemListEnd
+
+\resumeProjectHeading
+{\textbf{Real-Time Chat Application} $|$ \textit{React.js, Node.js, WebSockets, MongoDB, OAuth 2.0}}{}
+\resumeItemListStart
+\resumeItem{Developed a full-stack real-time messaging platform with \textbf{React} frontend and \textbf{Node.js/Socket.io} backend, supporting multi-room chat, file sharing, and voice messages.}
+\resumeItem{Implemented \textbf{OAuth 2.0} authentication (Google/Facebook), \textbf{WebSocket} connections for instant messaging, and \textbf{MongoDB} for message persistence with pagination.}
+\resumeItem{Built responsive UI with presence indicators, typing status, and push notifications; deployed on \textbf{AWS EC2} with \textbf{Nginx} reverse proxy.}
+\resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+\end{document}

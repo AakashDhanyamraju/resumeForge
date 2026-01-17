@@ -1,0 +1,29 @@
+{
+  "name": "resume-maker",
+  "version": "1.0.0",
+  "description": "Modern resume maker with LaTeX support and live preview",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/server.ts",
+    "build": "bun build src/server.ts --outdir ./dist --target bun",
+    "start": "bun run dist/server.js",
+    "client:dev": "cd client && bun run dev",
+    "client:build": "cd client && bun run build"
+  },
+  "dependencies": {
+    "@elysiajs/cookie": "^0.8.0",
+    "@elysiajs/cors": "^1.1.0",
+    "@elysiajs/jwt": "^1.1.0",
+    "@elysiajs/static": "^1.1.0",
+    "@prisma/client": "^5.22.0",
+    "arctic": "^1.9.2",
+    "elysia": "^1.1.0",
+    "pg": "^8.17.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^20.10.0",
+    "prisma": "^5.22.0"
+  }
+}
