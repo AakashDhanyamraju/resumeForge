@@ -1,0 +1,22 @@
+services:
+  # Web service (nginx + backend)
+  - type: web
+    name: resumeforge
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: SESSION_COOKIE_NAME
+        value: resume_session
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /
+    autoDeploy: true
