@@ -3,11 +3,16 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import Editor from "../components/Editor";
 import PDFViewer from "../components/PDFViewer";
 import SnippetLibrary from "../components/SnippetLibrary";
+import InlineAIPrompt from "../components/InlineAIPrompt";
+import AIChatPanel from "../components/AIChatPanel";
 import { FileText, Download, Loader2, ChevronLeft, Save, BookOpen, Eye, Layout } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function EditorPage() {
   const { id } = useParams();
+  const { user } = useAuth();
+  const aiEnabled = user?.aiEnabled ?? false;
   const navigate = useNavigate();
   const [texContent, setTexContent] = useState("");
   const [resumeName, setResumeName] = useState("Untitled Resume");
@@ -18,6 +23,14 @@ export default function EditorPage() {
   const [error, setError] = useState<string | null>(null);
   const [showSnippets, setShowSnippets] = useState(false);
   const [focusMode, setFocusMode] = useState<"split" | "editor" | "preview">("split");
+
+  // AI State
+  const [showAIChat, setShowAIChat] = useState(false);
+  const [showInlineAI, setShowInlineAI] = useState(false);
+  const [aiPromptPosition, setAIPromptPosition] = useState({ x: 0, y: 0 });
+  const [selectedText, setSelectedText] = useState<{ text: string; start: number; end: number } | null>(null);
+  const [highlightText, setHighlightText] = useState<string | null>(null);
+  const [isFixingError, setIsFixingError] = useState(false);
 
   // Load resume from backend
   useEffect(() => {
@@ -133,6 +146,64 @@ export default function EditorPage() {
     setShowSnippets(false);
   };
 
+  // AI Handlers
+  const handleAITrigger = (position: { x: number; y: number }) => {
+    if (selectedText) {
+      setAIPromptPosition(position);
+      setShowInlineAI(true);
+    }
+  };
+
+  const handleAIApply = (newText: string) => {
+    if (selectedText) {
+      const before = texContent.substring(0, selectedText.start);
+      const after = texContent.substring(selectedText.end);
+      setTexContent(before + newText + after);
+      setSelectedText(null);
+    }
+  };
+
+  const handleChatApplyEdit = (original: string, replacement: string) => {
+    setTexContent(prev => prev.replace(original, replacement));
+    setHighlightText(null); // Clear highlight after applying
+  };
+
+  const handleHighlightText = (text: string | null) => {
+    setHighlightText(text);
+  };
+
+  const handleAskAIFix = async (errorMessage: string) => {
+    setIsFixingError(true);
+    try {
+      const response = await fetch("/api/ai/fix-error", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          latexContent: texContent,
+          errorMessage,
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok && data.fixedContent) {
+        setTexContent(data.fixedContent);
+        setError(null); // Clear the error
+        // Auto-compile after fix
+        setTimeout(() => {
+          compilePdf();
+        }, 500);
+      } else {
+        alert("AI couldn't fix the error: " + (data.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error("AI fix error:", err);
+      alert("Failed to connect to AI service");
+    } finally {
+      setIsFixingError(false);
+    }
+  };
+
   const downloadPdf = () => {
     if (pdfUrl) {
       const link = document.createElement("a");
@@ -240,7 +311,16 @@ export default function EditorPage() {
               animate={{ opacity: 1, x: 0 }}
               className={`h-full border-r border-white/5 bg-[#0f172a] ${focusMode === 'split' ? 'w-1/2' : 'w-full'}`}
             >
-              <Editor value={texContent} onChange={setTexContent} error={error} />
+              <Editor
+                value={texContent}
+                onChange={setTexContent}
+                error={error}
+                onSelectionChange={setSelectedText}
+                onAITrigger={aiEnabled ? handleAITrigger : undefined}
+                highlightText={highlightText}
+                onAskAIFix={aiEnabled ? handleAskAIFix : undefined}
+                isFixingError={isFixingError}
+              />
             </motion.div>
           )}
 
@@ -255,6 +335,28 @@ export default function EditorPage() {
             </motion.div>
           )}
         </div>
+
+        {/* AI Components - Only render if AI is enabled for user */}
+        {aiEnabled && (
+          <>
+            <InlineAIPrompt
+              isOpen={showInlineAI}
+              selectedText={selectedText?.text || ""}
+              position={aiPromptPosition}
+              onClose={() => setShowInlineAI(false)}
+              onApply={handleAIApply}
+              fullContent={texContent}
+            />
+
+            <AIChatPanel
+              isOpen={showAIChat}
+              onToggle={() => setShowAIChat(!showAIChat)}
+              resumeContent={texContent}
+              onApplyEdit={handleChatApplyEdit}
+              onHighlightText={handleHighlightText}
+            />
+          </>
+        )}
       </div>
     </div>
   );

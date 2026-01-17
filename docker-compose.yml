@@ -16,6 +16,7 @@ services:
       - MAILERSEND_API_KEY=${MAILERSEND_API_KEY}
       - APP_URL=${APP_URL:-http://localhost}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
       - ./templates:/app/templates:ro
       - temp-data:/app/temp

@@ -6,6 +6,9 @@ interface User {
     name: string | null;
     picture: string | null;
     emailVerified?: boolean;
+    role: "admin" | "content_manager" | "user";
+    aiEnabled: boolean;
+    aiModel: string;
 }
 
 interface AuthContextType {

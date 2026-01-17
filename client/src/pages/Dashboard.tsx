@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, FileText, Trash2, Clock, ChevronRight, LogOut, User } from "lucide-react";
+import { Plus, FileText, Trash2, Clock, ChevronRight, LogOut, User, Shield } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -73,6 +73,16 @@ export default function Dashboard() {
                         <p className="text-slate-400">Manage your saved resumes</p>
                     </div>
                     <div className="flex items-center gap-4">
+                        {/* Admin Link */}
+                        {user && (user.role === "admin" || user.role === "content_manager") && (
+                            <Link
+                                to="/admin"
+                                className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-lg border border-amber-500/20 transition-colors"
+                            >
+                                <Shield size={16} />
+                                <span className="text-sm font-medium">Admin</span>
+                            </Link>
+                        )}
                         {/* User Info */}
                         {user && (
                             <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-lg border border-white/5">

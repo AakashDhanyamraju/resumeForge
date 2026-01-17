@@ -14,6 +14,11 @@ model User {
   name      String?
   picture   String?
   
+  // Role-based access control
+  role       String  @default("user")  // "admin" | "content_manager" | "user"
+  aiEnabled  Boolean @default(false)   // AI features access
+  aiModel    String  @default("gpt-4o-mini")  // Preferred AI model
+  
   // Email/Password authentication fields
   password          String?   // Hashed with bcrypt (null for OAuth users)
   emailVerified     Boolean   @default(false)
@@ -54,4 +59,14 @@ model Session {
   createdAt DateTime @default(now())
   
   @@index([userId])
+}
+
+model Template {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  content     String   @db.Text
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

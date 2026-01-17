@@ -18,6 +18,7 @@ import {
   getVerificationTokenExpiry
 } from "./lib/auth";
 import { sendVerificationEmail } from "./lib/email";
+import { editResumeSection, chatWithResume, getResumeSuggestions, streamChatWithResume, fixLatexError } from "./lib/ai";
 import { prisma } from "./lib/db";
 
 const execAsync = promisify(exec);
@@ -186,7 +187,18 @@ app = app
       set.status = 401;
       return { user: null };
     }
-    return { user: { id: user.id, email: user.email, name: user.name, picture: user.picture, emailVerified: user.emailVerified } };
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        picture: user.picture,
+        emailVerified: user.emailVerified,
+        role: user.role,
+        aiEnabled: user.aiEnabled,
+        aiModel: user.aiModel
+      }
+    };
   })
   // ============================================
   // Email/Password Authentication
@@ -532,6 +544,166 @@ app = app
     return { success: true, count: created.count };
   })
   // ============================================
+  // AI Resume Editing API (Protected)
+  // ============================================
+  .post("/api/ai/edit", async ({ body, user, set }) => {
+    if (!user) {
+      set.status = 401;
+      return { error: "Unauthorized" };
+    }
+
+    const { selectedText, instruction, fullContent } = body as {
+      selectedText: string;
+      instruction: string;
+      fullContent?: string;
+    };
+
+    if (!selectedText || !instruction) {
+      set.status = 400;
+      return { error: "selectedText and instruction are required" };
+    }
+
+    try {
+      const editedText = await editResumeSection(selectedText, instruction, fullContent);
+      return { editedText };
+    } catch (error: any) {
+      console.error("AI edit error:", error);
+      set.status = 500;
+      return { error: "Failed to process AI edit" };
+    }
+  })
+  .post("/api/ai/chat", async ({ body, user, set }) => {
+    if (!user) {
+      set.status = 401;
+      return { error: "Unauthorized" };
+    }
+
+    const { messages, resumeContent } = body as {
+      messages: Array<{ role: "user" | "assistant"; content: string }>;
+      resumeContent: string;
+    };
+
+    if (!messages || !resumeContent) {
+      set.status = 400;
+      return { error: "messages and resumeContent are required" };
+    }
+
+    try {
+      const response = await chatWithResume(messages, resumeContent);
+      return response;
+    } catch (error: any) {
+      console.error("AI chat error:", error);
+      set.status = 500;
+      return { error: "Failed to process chat message" };
+    }
+  })
+  .post("/api/ai/chat/stream", async ({ body, user, set }) => {
+    if (!user) {
+      set.status = 401;
+      return { error: "Unauthorized" };
+    }
+
+    const { messages, resumeContent } = body as {
+      messages: Array<{ role: "user" | "assistant"; content: string }>;
+      resumeContent: string;
+    };
+
+    if (!messages || !resumeContent) {
+      set.status = 400;
+      return { error: "messages and resumeContent are required" };
+    }
+
+    try {
+      const stream = await streamChatWithResume(messages, resumeContent);
+
+      // Create a ReadableStream for SSE
+      const encoder = new TextEncoder();
+      const readable = new ReadableStream({
+        async start(controller) {
+          try {
+            for await (const chunk of stream) {
+              const content = chunk.choices[0]?.delta?.content || "";
+              if (content) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
+              }
+            }
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+          } catch (err) {
+            controller.error(err);
+          }
+        },
+      });
+
+      return new Response(readable, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+        },
+      });
+    } catch (error: any) {
+      console.error("AI stream error:", error);
+      set.status = 500;
+      return { error: "Failed to stream chat" };
+    }
+  })
+  .get("/api/ai/suggestions", async ({ query, user, set }) => {
+    if (!user) {
+      set.status = 401;
+      return { error: "Unauthorized" };
+    }
+
+    const resumeId = query.resumeId as string;
+    if (!resumeId) {
+      set.status = 400;
+      return { error: "resumeId is required" };
+    }
+
+    const resume = await prisma.resume.findFirst({
+      where: { id: resumeId, userId: user.id },
+    });
+
+    if (!resume) {
+      set.status = 404;
+      return { error: "Resume not found" };
+    }
+
+    try {
+      const suggestions = await getResumeSuggestions(resume.content);
+      return { suggestions };
+    } catch (error: any) {
+      console.error("AI suggestions error:", error);
+      set.status = 500;
+      return { error: "Failed to get suggestions" };
+    }
+  })
+  .post("/api/ai/fix-error", async ({ body, user, set }) => {
+    if (!user) {
+      set.status = 401;
+      return { error: "Unauthorized" };
+    }
+
+    const { latexContent, errorMessage } = body as {
+      latexContent: string;
+      errorMessage: string;
+    };
+
+    if (!latexContent || !errorMessage) {
+      set.status = 400;
+      return { error: "latexContent and errorMessage are required" };
+    }
+
+    try {
+      const fixedContent = await fixLatexError(latexContent, errorMessage);
+      return { fixedContent };
+    } catch (error: any) {
+      console.error("AI fix error:", error);
+      set.status = 500;
+      return { error: "Failed to fix error" };
+    }
+  })
+  // ============================================
   // Public Template Routes
   // ============================================
   .get("/api/templates", async () => {
@@ -734,7 +906,204 @@ To verify installation, run: pdflatex --version`;
       };
     }
   })
+  // ============================================
+  // Admin Routes
+  // ============================================
+  // Get all templates (content_manager+)
+  .get("/api/admin/templates", async ({ user, set }) => {
+    if (!user || (user.role !== "admin" && user.role !== "content_manager")) {
+      set.status = 403;
+      return { error: "Access denied" };
+    }
+
+    const templates = await prisma.template.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    return { templates };
+  })
+  // Create template (content_manager+)
+  .post("/api/admin/templates", async ({ user, body, set }) => {
+    if (!user || (user.role !== "admin" && user.role !== "content_manager")) {
+      set.status = 403;
+      return { error: "Access denied" };
+    }
+
+    const { name, content, description } = body as {
+      name: string;
+      content: string;
+      description?: string;
+    };
+
+    if (!name || !content) {
+      set.status = 400;
+      return { error: "Name and content are required" };
+    }
+
+    try {
+      const template = await prisma.template.create({
+        data: { name, content, description },
+      });
+      return { template };
+    } catch (error: any) {
+      if (error.code === "P2002") {
+        set.status = 400;
+        return { error: "Template name already exists" };
+      }
+      throw error;
+    }
+  })
+  // Update template (content_manager+)
+  .put("/api/admin/templates/:id", async ({ user, params, body, set }) => {
+    if (!user || (user.role !== "admin" && user.role !== "content_manager")) {
+      set.status = 403;
+      return { error: "Access denied" };
+    }
+
+    const { id } = params;
+    const { name, content, description, isActive } = body as {
+      name?: string;
+      content?: string;
+      description?: string;
+      isActive?: boolean;
+    };
+
+    try {
+      const template = await prisma.template.update({
+        where: { id },
+        data: {
+          ...(name && { name }),
+          ...(content && { content }),
+          ...(description !== undefined && { description }),
+          ...(isActive !== undefined && { isActive }),
+        },
+      });
+      return { template };
+    } catch (error: any) {
+      if (error.code === "P2025") {
+        set.status = 404;
+        return { error: "Template not found" };
+      }
+      throw error;
+    }
+  })
+  // Delete template (content_manager+)
+  .delete("/api/admin/templates/:id", async ({ user, params, set }) => {
+    if (!user || (user.role !== "admin" && user.role !== "content_manager")) {
+      set.status = 403;
+      return { error: "Access denied" };
+    }
+
+    try {
+      await prisma.template.delete({ where: { id: params.id } });
+      return { success: true };
+    } catch (error: any) {
+      if (error.code === "P2025") {
+        set.status = 404;
+        return { error: "Template not found" };
+      }
+      throw error;
+    }
+  })
+  // Get all users (admin only)  
+  .get("/api/admin/users", async ({ user, set }) => {
+    if (!user || user.role !== "admin") {
+      set.status = 403;
+      return { error: "Access denied" };
+    }
+
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        picture: true,
+        role: true,
+        aiEnabled: true,
+        aiModel: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    return { users };
+  })
+  // Update user role (admin only)
+  .patch("/api/admin/users/:id/role", async ({ user, params, body, set }) => {
+    if (!user || user.role !== "admin") {
+      set.status = 403;
+      return { error: "Access denied" };
+    }
+
+    const { role } = body as { role: string };
+    if (!["admin", "content_manager", "user"].includes(role)) {
+      set.status = 400;
+      return { error: "Invalid role. Must be admin, content_manager, or user" };
+    }
+
+    // Prevent removing own admin role
+    if (params.id === user.id && role !== "admin") {
+      set.status = 400;
+      return { error: "Cannot remove your own admin role" };
+    }
+
+    try {
+      const updatedUser = await prisma.user.update({
+        where: { id: params.id },
+        data: { role },
+        select: { id: true, email: true, name: true, role: true },
+      });
+      return { user: updatedUser };
+    } catch (error: any) {
+      if (error.code === "P2025") {
+        set.status = 404;
+        return { error: "User not found" };
+      }
+      throw error;
+    }
+  })
+  // Update user AI settings (admin only)
+  .patch("/api/admin/users/:id/ai", async ({ user, params, body, set }) => {
+    if (!user || user.role !== "admin") {
+      set.status = 403;
+      return { error: "Access denied" };
+    }
+
+    const { aiEnabled, aiModel } = body as { aiEnabled?: boolean; aiModel?: string };
+
+    try {
+      const updatedUser = await prisma.user.update({
+        where: { id: params.id },
+        data: {
+          ...(aiEnabled !== undefined && { aiEnabled }),
+          ...(aiModel && { aiModel }),
+        },
+        select: { id: true, email: true, name: true, aiEnabled: true, aiModel: true },
+      });
+      return { user: updatedUser };
+    } catch (error: any) {
+      if (error.code === "P2025") {
+        set.status = 404;
+        return { error: "User not found" };
+      }
+      throw error;
+    }
+  })
+  // ============================================
+  // Catch-all route for SPA (must be last!)
+  // ============================================
+  .get("/*", async ({ path }) => {
+    // Skip API routes and static files
+    if (path.startsWith("/api/") || path.startsWith("/auth/")) {
+      return new Response("Not Found", { status: 404 });
+    }
+
+    // For all other routes, serve index.html (SPA routing)
+    if (isProduction) {
+      return Bun.file("./client/dist/index.html");
+    }
+
+    // Development mode - shouldn't hit this normally
+    return new Response("In development, use the Vite dev server at http://localhost:5173", { status: 200 });
+  })
   .listen(3000);
 
 console.log(`🚀 Server is running at http://localhost:${app.server?.port}`);
-
