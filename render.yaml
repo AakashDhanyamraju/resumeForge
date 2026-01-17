@@ -18,5 +18,9 @@ services:
         value: resume_session
       - key: NODE_ENV
         value: production
+      - key: APP_URL
+        value: https://resumeforge-6saw.onrender.com
+      - key: FRONTEND_URL
+        value: https://resumeforge-6saw.onrender.com
     healthCheckPath: /
     autoDeploy: true
