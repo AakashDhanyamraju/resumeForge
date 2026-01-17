@@ -7,12 +7,15 @@ services:
       dockerfile: Dockerfile
     container_name: resume-maker-backend
     environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://postgres.bofeuhmhuhmsstiegeyp:xO2f21L3VE81r0UP@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
+      - NODE_ENV=${NODE_ENV:-production}
+      - DATABASE_URL=${DATABASE_URL}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-placeholder-google-client-id}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-placeholder-google-client-secret}
       - JWT_SECRET=${JWT_SECRET:-placeholder-jwt-secret-change-this}
-      - SESSION_COOKIE_NAME=resume_session
+      - SESSION_COOKIE_NAME=${SESSION_COOKIE_NAME:-resume_session}
+      - MAILERSEND_API_KEY=${MAILERSEND_API_KEY}
+      - APP_URL=${APP_URL:-http://localhost}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
     volumes:
       - ./templates:/app/templates:ro
       - temp-data:/app/temp

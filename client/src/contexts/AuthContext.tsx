@@ -5,13 +5,15 @@ interface User {
     email: string;
     name: string | null;
     picture: string | null;
+    emailVerified?: boolean;
 }
 
 interface AuthContextType {
     user: User | null | undefined; // undefined = loading, null = not logged in, User = logged in
-    login: () => void;
+    login: () => Promise<void>;
     logout: () => Promise<void>;
     isLoading: boolean;
+    checkAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,9 +40,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const login = () => {
-        // Redirect to Google OAuth
-        window.location.href = "/auth/google";
+    const login = async () => {
+        // Just refresh user state, actual login logic handled in components
+        await fetchUser();
     };
 
     const logout = async () => {
@@ -57,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+        <AuthContext.Provider value={{ user, login, logout, isLoading, checkAuth: fetchUser }}>
             {children}
         </AuthContext.Provider>
     );

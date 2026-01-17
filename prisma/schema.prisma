@@ -9,15 +9,28 @@ generator client {
 
 model User {
   id        String   @id @default(cuid())
-  googleId  String   @unique
+  googleId  String?  @unique  // Made optional for email/password users
   email     String   @unique
   name      String?
   picture   String?
+  
+  // Email/Password authentication fields
+  password          String?   // Hashed with bcrypt (null for OAuth users)
+  emailVerified     Boolean   @default(false)
+  verificationToken String?   @unique
+  tokenExpiry       DateTime?
+  resetToken        String?   @unique
+  resetTokenExpiry  DateTime?
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
   resumes   Resume[]
   sessions  Session[]
+  
+  @@index([email])
+  @@index([verificationToken])
+  @@index([resetToken])
 }
 
 model Resume {

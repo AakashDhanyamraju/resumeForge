@@ -8,7 +8,16 @@ import { existsSync } from "fs";
 import { join } from "path";
 import { exec } from "child_process";
 import { promisify } from "util";
-import { google, createSession, validateSession, deleteSession } from "./lib/auth";
+import {
+  google, createSession, validateSession, deleteSession,
+  deleteExpiredSessions,
+  hashPassword,
+  verifyPassword,
+  validatePassword,
+  generateVerificationToken,
+  getVerificationTokenExpiry
+} from "./lib/auth";
+import { sendVerificationEmail } from "./lib/email";
 import { prisma } from "./lib/db";
 
 const execAsync = promisify(exec);
@@ -137,6 +146,7 @@ app = app
             email: googleUser.email,
             name: googleUser.name,
             picture: googleUser.picture,
+            emailVerified: true, // Google OAuth users are pre-verified
           },
         });
       } else {
@@ -146,6 +156,7 @@ app = app
           data: {
             name: googleUser.name,
             picture: googleUser.picture,
+            emailVerified: true, // Ensure verified status
           },
         });
       }
@@ -175,7 +186,209 @@ app = app
       set.status = 401;
       return { user: null };
     }
-    return { user: { id: user.id, email: user.email, name: user.name, picture: user.picture } };
+    return { user: { id: user.id, email: user.email, name: user.name, picture: user.picture, emailVerified: user.emailVerified } };
+  })
+  // ============================================
+  // Email/Password Authentication
+  // ============================================
+  .post("/auth/signup", async ({ body, set }) => {
+    try {
+      const { email, password, name } = body as any;
+
+      // Basic validation
+      if (!email || !password || !name) {
+        set.status = 400;
+        return { error: "Missing required fields" };
+      }
+
+      // Check password strength
+      const { valid, errors } = validatePassword(password);
+      if (!valid) {
+        set.status = 400;
+        return { error: "Weak password", details: errors };
+      }
+
+      // Check if user exists
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (existingUser) {
+        set.status = 400;
+        return { error: "Email already registered" };
+      }
+
+      // Hash password
+      const hashedPassword = await hashPassword(password);
+
+      // Generate verification token
+      const verificationToken = generateVerificationToken();
+      const tokenExpiry = getVerificationTokenExpiry();
+
+      // Create user
+      await prisma.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          name,
+          emailVerified: false,
+          verificationToken,
+          tokenExpiry,
+        },
+      });
+
+      // Send verification email
+      try {
+        await sendVerificationEmail(email, name, verificationToken);
+      } catch (emailError) {
+        console.error("Failed to send verification email:", emailError);
+        // Continue - user is created but simply needs to resend verification later
+      }
+
+      return { success: true, message: "Account created. Please verify your email." };
+    } catch (error) {
+      console.error("Signup error:", error);
+      set.status = 500;
+      return { error: "Failed to create account" };
+    }
+  })
+  .post("/auth/login", async ({ body, cookie: cookies, set }) => {
+    try {
+      const { email, password } = body as any;
+
+      if (!email || !password) {
+        set.status = 400;
+        return { error: "Missing permissions" };
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (!user || !user.password) {
+        // Use generic error message for security
+        set.status = 401;
+        return { error: "Invalid email or password" };
+      }
+
+      // Check if password matches
+      const isValid = await verifyPassword(password, user.password);
+      if (!isValid) {
+        set.status = 401;
+        return { error: "Invalid email or password" };
+      }
+
+      // Check if verified
+      if (!user.emailVerified) {
+        set.status = 403;
+        return { error: "Email not verified", emailVerified: false };
+      }
+
+      // Create session
+      const session = await createSession(user.id);
+
+      // Set session cookie
+      const cookieName = process.env.SESSION_COOKIE_NAME || "resume_session";
+      cookies[cookieName].set({
+        value: session.id,
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+      });
+
+      return { success: true, user: { id: user.id, email: user.email, name: user.name, picture: user.picture } };
+    } catch (error) {
+      console.error("Login error:", error);
+      set.status = 500;
+      return { error: "Login failed" };
+    }
+  })
+  .get("/auth/verify-email", async ({ query, cookie: cookies, set }) => {
+    try {
+      const token = query.token as string;
+
+      if (!token) {
+        return Response.redirect("/login?error=invalid_token", 302);
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { verificationToken: token },
+      });
+
+      if (!user || !user.tokenExpiry || user.tokenExpiry < new Date()) {
+        return Response.redirect("/login?error=token_expired", 302);
+      }
+
+      // Update user status
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerified: true,
+          verificationToken: null,
+          tokenExpiry: null,
+        },
+      });
+
+      // Create session for auto-login
+      const session = await createSession(user.id);
+      const cookieName = process.env.SESSION_COOKIE_NAME || "resume_session";
+      cookies[cookieName].set({
+        value: session.id,
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 30 * 24 * 60 * 60,
+      });
+
+      return Response.redirect("/dashboard?verified=true", 302);
+    } catch (error) {
+      console.error("Verification error:", error);
+      return Response.redirect("/login?error=verification_failed", 302);
+    }
+  })
+  .post("/auth/resend-verification", async ({ body, set }) => {
+    try {
+      const { email } = body as any;
+
+      if (!email) {
+        set.status = 400;
+        return { error: "Email is required" };
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (!user) {
+        // Return success even if user not found to prevent user enumeration
+        return { success: true, message: "If account exists, verification email sent" };
+      }
+
+      if (user.emailVerified) {
+        return { success: true, message: "Email already verified" };
+      }
+
+      // Generate new token
+      const verificationToken = generateVerificationToken();
+      const tokenExpiry = getVerificationTokenExpiry();
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          verificationToken,
+          tokenExpiry,
+        },
+      });
+
+      await sendVerificationEmail(email, user.name || "User", verificationToken);
+
+      return { success: true, message: "Verification email sent" };
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      set.status = 500;
+      return { error: "Failed to send verification email" };
+    }
   })
   .post("/auth/logout", async ({ cookie: cookies, set }) => {
     const sessionCookie = cookies[process.env.SESSION_COOKIE_NAME || "resume_session"];
