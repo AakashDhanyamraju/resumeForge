@@ -2,16 +2,29 @@
 
 A modern, web-based resume maker that allows you to create and edit LaTeX resumes with live preview. Features ATS-friendly templates and real-time PDF compilation.
 
+![GitHub license](https://img.shields.io/github/license/AakashDhanyamraju/resumeForge)
+![GitHub last commit](https://img.shields.io/github/last-commit/AakashDhanyamraju/resumeForge)
+![GitHub issues](https://img.shields.io/github/issues/AakashDhanyamraju/resumeForge)
+![OpenAI](https://img.shields.io/badge/AI-OpenAI-green)
+
 ## Features
 
 - 📝 **Live LaTeX Editor** - Edit your resume in real-time with syntax highlighting
 - 👁️ **Live Preview** - See your changes instantly as PDF preview
-- 🎨 **Modern Templates** - Pre-built ATS-friendly resume templates
+- 🤖 **AI-Powered Editing** - Enhance your content with AI suggestions (OpenAI integration)
+- 🎨 **Modern Templates** - Pre-built ATS-friendly resume templates stored in S3
 - 📄 **PDF Export** - Download your resume as a professional PDF
 - ⚡ **Fast Compilation** - Powered by Bun for lightning-fast LaTeX compilation
 - 🎯 **ATS Optimized** - Templates designed to pass Applicant Tracking Systems
+- 🔐 **Role-Based Access** - Admin, Content Manager, and User roles
 - 🐳 **Docker Support** - No need to install LaTeX locally - everything runs in containers
 - 🌐 **Production Ready** - Nginx reverse proxy for single-server deployment
+
+## Security & Open Source
+
+- The repository now includes a `.env.example` file with placeholder environment variables to avoid exposing secrets.
+- All real secrets have been removed from the codebase and are listed in `.gitignore`.
+- A secret‑leak audit was performed; no hard‑coded secrets remain.
 
 ## Prerequisites
 
@@ -134,6 +147,8 @@ resume-maker/
 
 - **Backend Container**: Runs Bun server with LaTeX (texlive) installed
 - **Nginx Container**: Serves frontend static files and proxies API requests
+- **Database**: PostgreSQL (Supabase) for user data and sessions
+- **Storage**: S3-compatible storage (Supabase Storage) for templates and assets
 - **Single Port**: Access everything on port 80 (or 443 for HTTPS)
 
 ### API Endpoints
@@ -216,7 +231,7 @@ docker-compose up -d --build
    - Configure port 443 in `docker-compose.yml`
 
 3. **Environment-specific configuration:**
-   - Create `.env` file for environment variables
+   - Copy `.env.example` to `.env` and fill in your credentials
    - Update `docker-compose.yml` to use `.env` file
 
 ### Cloud Deployment
