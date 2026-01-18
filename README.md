@@ -1,4 +1,4 @@
-# Resume Maker - LaTeX Resume Builder
+# Resume Forge - LaTeX Resume Builder
 
 A modern, web-based resume maker that allows you to create and edit LaTeX resumes with live preview. Features ATS-friendly templates and real-time PDF compilation.
 
