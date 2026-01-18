@@ -20,7 +20,7 @@ import {
 import { sendVerificationEmail } from "./lib/email";
 import { editResumeSection, chatWithResume, getResumeSuggestions, streamChatWithResume, fixLatexError, evaluateATSScore, convertResumeToLatex } from "./lib/ai";
 import { prisma } from "./lib/db";
-import { uploadTemplateImage, getTemplateImage } from "./lib/storage";
+import { uploadTemplateImage, getTemplateImage, uploadDirectoryToS3, downloadDirectoryFromS3 } from "./lib/storage";
 import AdmZip from "adm-zip";
 
 const execAsync = promisify(exec);
@@ -863,13 +863,16 @@ app = app
         return { error: "Could not extract text from the uploaded file. The file may be empty or corrupted." };
       }
 
-      // Fetch template content
-      const templatePath = join(process.cwd(), "templates", `${templateName}.tex`);
-      if (!existsSync(templatePath)) {
+      // Fetch template content from Database
+      const template = await prisma.template.findFirst({
+        where: { name: templateName }
+      });
+
+      if (!template) {
         set.status = 404;
         return { error: "Template not found" };
       }
-      const templateContent = await readFile(templatePath, "utf-8");
+      const templateContent = template.content;
 
       // Convert to LaTeX using AI
       const latexContent = await convertResumeToLatex(textContent, templateContent);
@@ -994,15 +997,32 @@ app = app
       const tempDir = join(process.cwd(), "temp", `resume_${Date.now()}`);
       await mkdir(tempDir, { recursive: true });
 
-      // NEW: Copy template assets if they exist
+      // NEW: Download template assets from S3 if they exist
       if (templateName) {
         const safeName = templateName.replace(/[^a-zA-Z0-9]/g, "");
-        const templateDir = join(process.cwd(), "templates", safeName);
-        if (existsSync(templateDir)) {
-          // Copy all files from template dir to temp dir
-          // We use shell cp because fs.cp is experimental in some node versions, 
-          // but bun implements node fs. Let's use recursive cp via exec for reliability on linux container.
-          await execAsync(`cp -r "${templateDir}/." "${tempDir}/"`);
+        const s3Prefix = `templates/${safeName}`;
+
+        try {
+          // Attempt to download from S3
+          // Note: This logic assumes if templateName is provided, we check S3.
+          // If it's a legacy template without S3 assets, this might find nothing, which is fine.
+          // But we should catch errors if S3 fails (e.g. connectivity).
+
+          // Optimization: We could check if we already have it cached locally in 'templates/' 
+          // but the user wanted to use S3 destination files.
+          // For now, stateless: ALWAYS download from S3 to tempDir.
+
+          console.log(`Downloading template assets from S3: ${s3Prefix}`);
+          await downloadDirectoryFromS3(s3Prefix, tempDir);
+
+        } catch (e) {
+          console.error("Failed to download template assets from S3:", e);
+          // Fallback: If S3 fails, check if we have local copy (legacy)
+          const localTemplateDir = join(process.cwd(), "templates", safeName);
+          if (existsSync(localTemplateDir)) {
+            console.log("Falling back to local template directory");
+            await execAsync(`cp -r "${localTemplateDir}/." "${tempDir}/"`);
+          }
         }
       }
 
@@ -1229,8 +1249,9 @@ To verify installation, run: pdflatex --version`;
     let finalContent = content || "";
     let finalClsContent = clsContent || "";
 
-    // 1. Handle ZIP Upload (Extract to FS + Get Content)
+    // 1. Handle ZIP Upload (Extract to FS -> S3 -> Get Content)
     if (zipFile) {
+      let tempExtractDir = "";
       try {
         const buffer = Buffer.from(await zipFile.arrayBuffer());
         const zip = new AdmZip(buffer);
@@ -1238,18 +1259,31 @@ To verify installation, run: pdflatex --version`;
 
         // Sanitize name for folder
         const safeName = name.replace(/[^a-zA-Z0-9]/g, "");
-        const templateDir = join(process.cwd(), "templates", safeName);
 
-        // Ensure directory exists (and clean it if it exists?)
-        if (existsSync(templateDir)) {
-          await rm(templateDir, { recursive: true, force: true });
-        }
-        await mkdir(templateDir, { recursive: true });
+        // Extract to a TEMPORARY directory first
+        tempExtractDir = join(process.cwd(), "temp", `upload_${Date.now()}`);
+        await mkdir(tempExtractDir, { recursive: true });
 
-        // Extract ALL contents to templates/<safeName>/
-        zip.extractAllTo(templateDir, true);
+        // Extract ALL contents
+        zip.extractAllTo(tempExtractDir, true);
 
-        // Read main.tex for DB
+        // Upload to S3
+        const s3Prefix = `templates/${safeName}`;
+        console.log(`Uploading template to S3: ${s3Prefix}`);
+        await uploadDirectoryToS3(tempExtractDir, s3Prefix);
+
+        // Also keep local copy? 
+        // User asked "can we push this whole into the s3 ? and use s3 destination files to compile?"
+        // Implies we don't strictly need local copy in `templates/`.
+        // But having a local cache might be useful.
+        // For true statelessness, we only rely on S3.
+        // Let's REMOVE the local `templates/safeName` logic if we want to rely on S3.
+        // Or keep it as cache.
+        // Previously I wrote to `templates/${safeName}`.
+        // Now I download from S3 to `tempDir` on compile. 
+        // So I don't need persistent local `templates/`.
+
+        // Read main.tex for DB (from the extracted temp files or zip memory)
         const mainTex = zipEntries.find((entry: any) => entry.entryName === "main.tex" || entry.entryName.endsWith("main.tex"));
         if (mainTex) {
           finalContent = zip.readAsText(mainTex);
@@ -1265,9 +1299,14 @@ To verify installation, run: pdflatex --version`;
         }
 
       } catch (e: any) {
-        console.error("ZIP extraction failed:", e);
+        console.error("ZIP extraction/upload failed:", e);
         set.status = 400;
-        return { error: "Failed to read ZIP file: " + e.message };
+        return { error: "Failed to process ZIP file: " + e.message };
+      } finally {
+        // Cleanup temp extraction dir
+        if (tempExtractDir && existsSync(tempExtractDir)) {
+          await rm(tempExtractDir, { recursive: true, force: true });
+        }
       }
     }
 

@@ -244,6 +244,7 @@ Common LaTeX errors include:
 - Illegal parameter numbers in newcommand
 - Extra alignment tabs (&)
 - Missing \\end{...} for environments
+- Package microtype Error (If seen, REMOVE the microtype package entirely, as it conflicts with XeLaTeX)
 
 Return ONLY the fixed LaTeX code. Do not include any explanations, markdown code blocks, or other text.`,
             },
@@ -414,6 +415,7 @@ CRITICAL RULES:
 5. Return ONLY valid, compilable LaTeX code - no explanations or markdown
 6. Ensure special characters are properly escaped for LaTeX (%, $, &, #, _, {, })
 7. If the resume has sections not in the template, adapt them to match the template style
+8. DO NOT add the 'microtype' package, as it conflicts with XeLaTeX fonts. If the template uses it, remove it.
 
 OUTPUT: Return ONLY the complete LaTeX document from \\documentclass to \\end{document}.`,
             },
