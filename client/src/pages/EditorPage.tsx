@@ -14,7 +14,14 @@ export default function EditorPage() {
   const { user } = useAuth();
   const aiEnabled = user?.aiEnabled ?? false;
   const navigate = useNavigate();
+
+  // Debug: Log AI enabled status
+  useEffect(() => {
+    console.log("[EditorPage] User AI status:", { aiEnabled, userAiEnabled: user?.aiEnabled, user });
+  }, [user, aiEnabled]);
   const [texContent, setTexContent] = useState("");
+  const [clsContent, setClsContent] = useState<string | undefined>(undefined);
+  const [templateName, setTemplateName] = useState<string | undefined>(undefined);
   const [resumeName, setResumeName] = useState("Untitled Resume");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -59,6 +66,8 @@ export default function EditorPage() {
       if (data.resume) {
         setTexContent(data.resume.content);
         setResumeName(data.resume.name);
+        setClsContent(data.resume.clsContent);
+        setTemplateName(data.resume.templateName);
       }
     } catch (error) {
       console.error("Failed to load resume:", error);
@@ -114,7 +123,11 @@ export default function EditorPage() {
       const response = await fetch("/api/compile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texContent }),
+        body: JSON.stringify({
+          texContent,
+          clsContent,
+          templateName
+        }),
       });
 
       if (response.ok) {
@@ -226,15 +239,22 @@ export default function EditorPage() {
   }
 
   return (
-    <div className="h-screen bg-[#0f172a] text-slate-200 font-sans flex flex-col overflow-hidden">
+    <div className="h-screen bg-[#0a0f1a] text-slate-200 font-sans flex flex-col overflow-hidden">
 
       {/* Header */}
-      <header className="h-16 border-b border-white/5 bg-[#0f172a] flex items-center justify-between px-4 lg:px-6 relative z-20">
+      <header className="h-14 border-b border-white/5 bg-slate-900/80 backdrop-blur-xl flex items-center justify-between px-4 lg:px-6 relative z-20">
         <div className="flex items-center gap-4">
-          <Link to="/dashboard" className="p-2 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors">
-            <ChevronLeft size={20} />
+          <Link to="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-sky-500/20">
+              <FileText size={16} className="text-white" />
+            </div>
           </Link>
-          <div className="h-8 w-px bg-white/10" />
+
+          <div className="h-6 w-px bg-white/10" />
+
+          <Link to="/dashboard" className="p-1.5 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors" title="Back to Dashboard">
+            <ChevronLeft size={18} />
+          </Link>
 
           <input
             type="text"

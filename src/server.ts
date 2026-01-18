@@ -18,8 +18,10 @@ import {
   getVerificationTokenExpiry
 } from "./lib/auth";
 import { sendVerificationEmail } from "./lib/email";
-import { editResumeSection, chatWithResume, getResumeSuggestions, streamChatWithResume, fixLatexError } from "./lib/ai";
+import { editResumeSection, chatWithResume, getResumeSuggestions, streamChatWithResume, fixLatexError, evaluateATSScore, convertResumeToLatex } from "./lib/ai";
 import { prisma } from "./lib/db";
+import { uploadTemplateImage, getTemplateImage } from "./lib/storage";
+import AdmZip from "adm-zip";
 
 const execAsync = promisify(exec);
 
@@ -33,7 +35,13 @@ let app = new Elysia()
   .use(
     jwt({
       name: "jwt",
-      secret: process.env.JWT_SECRET || "fallback-secret-key-change-this",
+      secret: (() => {
+        const secret = process.env.JWT_SECRET;
+        if (!secret && process.env.NODE_ENV === "production") {
+          throw new Error("FATAL: JWT_SECRET environment variable is required in production. Server cannot start without it.");
+        }
+        return secret || "dev-fallback-secret-key";
+      })(),
     })
   )
   .derive(async ({ cookie: cookies }) => {
@@ -450,7 +458,20 @@ app = app
       return { error: "Resume not found" };
     }
 
-    return { resume };
+    // Fetch the associated template to get clsContent
+    // Resumes store template name in 'template' field
+    // We sanitize if needed, but usually the name matches exactly
+    const template = await prisma.template.findUnique({
+      where: { name: resume.template }
+    });
+
+    return {
+      resume: {
+        ...resume,
+        clsContent: template?.clsContent || null,
+        templateName: template?.name || resume.template
+      }
+    };
   })
   .post("/api/user/resumes", async ({ body, user, set }) => {
     if (!user) {
@@ -703,40 +724,237 @@ app = app
       return { error: "Failed to fix error" };
     }
   })
+  .post("/api/ai/ats-score", async ({ body, user, set }) => {
+    if (!user) {
+      set.status = 401;
+      return { error: "Unauthorized" };
+    }
+
+    const { resumeContent, resumeId } = body as {
+      resumeContent?: string;
+      resumeId?: string;
+    };
+
+    let content = resumeContent;
+
+    // If resumeId is provided, fetch the resume content
+    if (!content && resumeId) {
+      const resume = await prisma.resume.findFirst({
+        where: { id: resumeId, userId: user.id },
+      });
+
+      if (!resume) {
+        set.status = 404;
+        return { error: "Resume not found" };
+      }
+
+      content = resume.content;
+    }
+
+    if (!content) {
+      set.status = 400;
+      return { error: "resumeContent or resumeId is required" };
+    }
+
+    try {
+      const result = await evaluateATSScore(content);
+      return result;
+    } catch (error: any) {
+      console.error("ATS score error:", error);
+      set.status = 500;
+      return { error: "Failed to evaluate ATS score" };
+    }
+  })
+  .post("/api/ai/ats-score/upload", async ({ body, user, set }) => {
+    if (!user) {
+      set.status = 401;
+      return { error: "Unauthorized" };
+    }
+
+    try {
+      const formData = body as { file: File };
+      const file = formData.file;
+
+      if (!file) {
+        set.status = 400;
+        return { error: "No file provided" };
+      }
+
+      const fileName = file.name.toLowerCase();
+      let textContent = "";
+
+      // Parse file based on type
+      if (fileName.endsWith(".pdf")) {
+        // Dynamic import for pdf-parse
+        const pdfParse = (await import("pdf-parse")).default;
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const pdfData = await pdfParse(buffer);
+        textContent = pdfData.text;
+      } else if (fileName.endsWith(".docx") || fileName.endsWith(".doc")) {
+        // Dynamic import for mammoth
+        const mammoth = await import("mammoth");
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const result = await mammoth.extractRawText({ buffer });
+        textContent = result.value;
+      } else if (fileName.endsWith(".txt") || fileName.endsWith(".tex")) {
+        textContent = await file.text();
+      } else {
+        set.status = 400;
+        return { error: "Unsupported file type. Please upload PDF, DOCX, DOC, TXT, or TEX files." };
+      }
+
+      if (!textContent.trim()) {
+        set.status = 400;
+        return { error: "Could not extract text from the uploaded file. The file may be empty or corrupted." };
+      }
+
+      const result = await evaluateATSScore(textContent);
+      return result;
+    } catch (error: any) {
+      console.error("ATS score upload error:", error);
+      set.status = 500;
+      return { error: "Failed to process file and evaluate ATS score" };
+    }
+  })
+  .post("/api/ai/import-resume", async ({ body, user, set }) => {
+    if (!user) {
+      set.status = 401;
+      return { error: "Unauthorized" };
+    }
+
+    try {
+      const formData = body as { file: File; templateName: string };
+      const file = formData.file;
+      const templateName = formData.templateName;
+
+      if (!file) {
+        set.status = 400;
+        return { error: "No file provided" };
+      }
+
+      if (!templateName) {
+        set.status = 400;
+        return { error: "No template selected" };
+      }
+
+      // Parse file to extract text
+      const fileName = file.name.toLowerCase();
+      let textContent = "";
+
+      if (fileName.endsWith(".pdf")) {
+        const pdfParse = (await import("pdf-parse")).default;
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const pdfData = await pdfParse(buffer);
+        textContent = pdfData.text;
+      } else if (fileName.endsWith(".docx") || fileName.endsWith(".doc")) {
+        const mammoth = await import("mammoth");
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const result = await mammoth.extractRawText({ buffer });
+        textContent = result.value;
+      } else if (fileName.endsWith(".txt") || fileName.endsWith(".tex")) {
+        textContent = await file.text();
+      } else {
+        set.status = 400;
+        return { error: "Unsupported file type. Please upload PDF, DOCX, DOC, TXT, or TEX files." };
+      }
+
+      if (!textContent.trim()) {
+        set.status = 400;
+        return { error: "Could not extract text from the uploaded file. The file may be empty or corrupted." };
+      }
+
+      // Fetch template content
+      const templatePath = join(process.cwd(), "templates", `${templateName}.tex`);
+      if (!existsSync(templatePath)) {
+        set.status = 404;
+        return { error: "Template not found" };
+      }
+      const templateContent = await readFile(templatePath, "utf-8");
+
+      // Convert to LaTeX using AI
+      const latexContent = await convertResumeToLatex(textContent, templateContent);
+
+      if (!latexContent || !latexContent.includes("\\documentclass")) {
+        set.status = 500;
+        return { error: "AI failed to generate valid LaTeX. Please try again." };
+      }
+
+      // Create resume in database
+      const resume = await prisma.resume.create({
+        data: {
+          name: file.name.replace(/\.(pdf|docx?|txt|tex)$/i, "") || "Imported Resume",
+          template: templateName,
+          content: latexContent,
+          userId: user.id,
+        },
+      });
+
+      return {
+        success: true,
+        resumeId: resume.id,
+        message: "Resume imported successfully"
+      };
+    } catch (error: any) {
+      console.error("Resume import error:", error);
+      set.status = 500;
+      return { error: "Failed to import resume. Please try again." };
+    }
+  })
   // ============================================
   // Public Template Routes
   // ============================================
   .get("/api/templates", async () => {
-    const templatesDir = join(process.cwd(), "templates");
-    if (!existsSync(templatesDir)) {
-      await mkdir(templatesDir, { recursive: true });
-      return { templates: [] };
-    }
-
-    const files = await readdir(templatesDir);
-    const templates = await Promise.all(
-      files
-        .filter((f) => f.endsWith(".tex"))
-        .map(async (file) => {
-          const content = await readFile(join(templatesDir, file), "utf-8");
-          const name = file.replace(".tex", "");
-          return { name, content, filename: file };
-        })
-    );
-
+    const templates = await prisma.template.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+      },
+      orderBy: { name: "asc" },
+    });
     return { templates };
   })
-  .get("/api/templates/:name", async ({ params }) => {
-    const templatePath = join(process.cwd(), "templates", `${params.name}.tex`);
-    if (!existsSync(templatePath)) {
+  .get("/api/templates/:name", async ({ params, set }) => {
+    const template = await prisma.template.findFirst({
+      where: {
+        name: params.name,
+        isActive: true
+      },
+    });
+
+    if (!template) {
+      set.status = 404;
       return { error: "Template not found" };
     }
-    const content = await readFile(templatePath, "utf-8");
-    return { name: params.name, content };
+
+    // Return content compatible with frontend expectation
+    return {
+      name: template.name,
+      content: template.content,
+      description: template.description
+    };
   })
-  .post("/api/compile", async ({ body, set }) => {
+  .get("/api/images/templates/:name", async ({ params, set }) => {
+    const stream = await getTemplateImage(params.name);
+    if (!stream) {
+      set.status = 404;
+      return { error: "Image not found" };
+    }
+
+    return new Response(stream as any, {
+      headers: { "Content-Type": "image/png" }
+    });
+  })
+  .post("/api/compile", async ({ body, user, set }) => {
+    // Authentication required to prevent DoS attacks
+    if (!user) {
+      set.status = 401;
+      return { error: "Unauthorized", details: "You must be logged in to compile resumes." };
+    }
+
     try {
-      const { texContent } = body as { texContent: string };
+      let { texContent, clsContent, templateName } = body as { texContent: string; clsContent?: string; templateName?: string };
 
       // Basic validation
       if (!texContent || !texContent.trim()) {
@@ -776,19 +994,60 @@ app = app
       const tempDir = join(process.cwd(), "temp", `resume_${Date.now()}`);
       await mkdir(tempDir, { recursive: true });
 
-      // Write .tex file
+      // NEW: Copy template assets if they exist
+      if (templateName) {
+        const safeName = templateName.replace(/[^a-zA-Z0-9]/g, "");
+        const templateDir = join(process.cwd(), "templates", safeName);
+        if (existsSync(templateDir)) {
+          // Copy all files from template dir to temp dir
+          // We use shell cp because fs.cp is experimental in some node versions, 
+          // but bun implements node fs. Let's use recursive cp via exec for reliability on linux container.
+          await execAsync(`cp -r "${templateDir}/." "${tempDir}/"`);
+        }
+      }
+
+      let className = "resume";
+      // If clsContent is provided, force it to match template name if possible
+      // or at least force consistency between .cls filename and \documentclass
+      if (clsContent) {
+        if (templateName) {
+          // Sanitize template name to be a valid filename (alphanumeric only ideally)
+          className = templateName.replace(/[^a-zA-Z0-9]/g, "");
+          if (!className) className = "custom";
+        } else {
+          // Fallback to extracting from documentclass if no template name provided
+          const classMatch = texContent.match(/\\documentclass(?:\[.*?\])?\{(.*?)\}/);
+          if (classMatch && classMatch[1]) {
+            className = classMatch[1].trim();
+          }
+        }
+
+        // write the cls file
+        const clsPath = join(tempDir, `${className}.cls`);
+        await writeFile(clsPath, clsContent, "utf-8");
+
+        // Force update the documentclass in texContent to match the className
+        // This ensures "cls name is always same as template name" logic
+        // We use a capture group $1 to preserve any options like [a4paper,11pt]
+        texContent = texContent.replace(
+          /(\\documentclass(?:\[.*?\])?)\{.*?\}/,
+          `$1{${className}}`
+        );
+      }
+
+      // Write .tex file (with potentially updated documentclass)
       const texPath = join(tempDir, "resume.tex");
       await writeFile(texPath, texContent, "utf-8");
 
       // Compile LaTeX to PDF
       try {
-        // Normalize paths for Windows compatibility
-        const normalizedOutputDir = tempDir.replace(/\\/g, "/");
-        const normalizedTexPath = texPath.replace(/\\/g, "/");
-
+        // Run compilation in the temp directory so relative paths (fonts/, images/) work
         await execAsync(
-          `pdflatex -interaction=nonstopmode -output-directory="${normalizedOutputDir}" "${normalizedTexPath}"`,
-          { timeout: 30000 }
+          `xelatex -interaction=nonstopmode -output-directory="." "resume.tex"`,
+          {
+            timeout: 45000, // Increased timeout for xelatex
+            cwd: tempDir
+          }
         );
 
         // Read PDF
@@ -826,6 +1085,14 @@ After installation, restart your terminal and server.
 
 To verify installation, run: pdflatex --version`;
         } else {
+          // DEBUG: List files in temp directory to help debug missing assets
+          try {
+            const { stdout } = await execAsync(`ls -R`, { cwd: tempDir });
+            console.log("Compile failed. File structure:", stdout);
+          } catch (e) {
+            console.log("Could not list files:", e);
+          }
+
           // Try to read log for LaTeX compilation errors
           const logPath = join(tempDir, "resume.log");
           if (existsSync(logPath)) {
@@ -921,6 +1188,29 @@ To verify installation, run: pdflatex --version`;
     });
     return { templates };
   })
+  // Upload template image (content_manager+)
+  .post("/api/admin/templates/upload-image", async ({ user, body, set }) => {
+    if (!user || (user.role !== "admin" && user.role !== "content_manager")) {
+      set.status = 403;
+      return { error: "Access denied" };
+    }
+
+    const { file, templateName } = body as { file: File; templateName: string };
+
+    if (!file || !templateName) {
+      set.status = 400;
+      return { error: "File and template name are required" };
+    }
+
+    try {
+      const imageUrl = await uploadTemplateImage(file, templateName);
+      return { imageUrl };
+    } catch (error: any) {
+      console.error("Image upload failed:", error);
+      set.status = 500;
+      return { error: "Failed to upload image" };
+    }
+  })
   // Create template (content_manager+)
   .post("/api/admin/templates", async ({ user, body, set }) => {
     if (!user || (user.role !== "admin" && user.role !== "content_manager")) {
@@ -928,30 +1218,87 @@ To verify installation, run: pdflatex --version`;
       return { error: "Access denied" };
     }
 
-    const { name, content, description } = body as {
+    const { name, content, clsContent, description, zipFile } = body as {
       name: string;
-      content: string;
+      content?: string;
+      clsContent?: string;
       description?: string;
+      zipFile?: File;
     };
 
-    if (!name || !content) {
-      set.status = 400;
-      return { error: "Name and content are required" };
+    let finalContent = content || "";
+    let finalClsContent = clsContent || "";
+
+    // 1. Handle ZIP Upload (Extract to FS + Get Content)
+    if (zipFile) {
+      try {
+        const buffer = Buffer.from(await zipFile.arrayBuffer());
+        const zip = new AdmZip(buffer);
+        const zipEntries = zip.getEntries();
+
+        // Sanitize name for folder
+        const safeName = name.replace(/[^a-zA-Z0-9]/g, "");
+        const templateDir = join(process.cwd(), "templates", safeName);
+
+        // Ensure directory exists (and clean it if it exists?)
+        if (existsSync(templateDir)) {
+          await rm(templateDir, { recursive: true, force: true });
+        }
+        await mkdir(templateDir, { recursive: true });
+
+        // Extract ALL contents to templates/<safeName>/
+        zip.extractAllTo(templateDir, true);
+
+        // Read main.tex for DB
+        const mainTex = zipEntries.find((entry: any) => entry.entryName === "main.tex" || entry.entryName.endsWith("main.tex"));
+        if (mainTex) {
+          finalContent = zip.readAsText(mainTex);
+        } else {
+          set.status = 400;
+          return { error: "ZIP must contain main.tex" };
+        }
+
+        // Read .cls for DB
+        const clsFile = zipEntries.find((entry: any) => entry.entryName.endsWith(".cls"));
+        if (clsFile) {
+          finalClsContent = zip.readAsText(clsFile);
+        }
+
+      } catch (e: any) {
+        console.error("ZIP extraction failed:", e);
+        set.status = 400;
+        return { error: "Failed to read ZIP file: " + e.message };
+      }
     }
 
+    if (!finalContent) {
+      set.status = 400;
+      return { error: "Template content is required (either via text or main.tex in ZIP)" };
+    }
+
+    // Try to create template
     try {
       const template = await prisma.template.create({
-        data: { name, content, description },
+        data: {
+          name,
+          content: finalContent,
+          clsContent: finalClsContent || null,
+          description,
+        },
       });
+
       return { template };
     } catch (error: any) {
-      if (error.code === "P2002") {
-        set.status = 400;
-        return { error: "Template name already exists" };
+      if (error.code === 'P2002') {
+        set.status = 409;
+        return { error: "A template with this name already exists" };
       }
-      throw error;
+      console.error("Create template error:", error);
+      set.status = 500;
+      return { error: "Failed to create template" };
     }
   })
+
   // Update template (content_manager+)
   .put("/api/admin/templates/:id", async ({ user, params, body, set }) => {
     if (!user || (user.role !== "admin" && user.role !== "content_manager")) {
@@ -959,20 +1306,21 @@ To verify installation, run: pdflatex --version`;
       return { error: "Access denied" };
     }
 
-    const { id } = params;
-    const { name, content, description, isActive } = body as {
+    const { name, content, clsContent, description, isActive } = body as {
       name?: string;
       content?: string;
+      clsContent?: string;
       description?: string;
       isActive?: boolean;
     };
 
     try {
       const template = await prisma.template.update({
-        where: { id },
+        where: { id: params.id },
         data: {
           ...(name && { name }),
           ...(content && { content }),
+          ...(clsContent !== undefined && { clsContent }),
           ...(description !== undefined && { description }),
           ...(isActive !== undefined && { isActive }),
         },

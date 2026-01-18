@@ -4,6 +4,8 @@ import Dashboard from "./pages/Dashboard";
 import Templates from "./pages/Templates";
 import EditorPage from "./pages/EditorPage";
 import AdminPage from "./pages/AdminPage";
+import ATSScore from "./pages/ATSScore";
+import ImportResume from "./pages/ImportResume";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import VerifyEmail from "./pages/VerifyEmail";
@@ -25,6 +27,8 @@ function AnimatedRoutes() {
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/editor/:id" element={<ProtectedRoute><EditorPage /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+        <Route path="/ats-score" element={<ProtectedRoute><ATSScore /></ProtectedRoute>} />
+        <Route path="/import" element={<ProtectedRoute><ImportResume /></ProtectedRoute>} />
       </Routes>
     </AnimatePresence>
   );

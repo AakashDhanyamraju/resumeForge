@@ -1,5 +1,5 @@
-import { useRef, useEffect, useCallback, useMemo } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { useRef, useEffect, useCallback, useMemo, useState } from "react";
+import { Sparkles, Loader2, Command, Keyboard } from "lucide-react";
 
 interface EditorProps {
   value: string;
@@ -24,6 +24,8 @@ export default function Editor({
 }: EditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
+  const [hasSelection, setHasSelection] = useState(false);
+  const [showAIHint, setShowAIHint] = useState(false);
 
   // Sync scroll between textarea and highlight overlay
   const handleScroll = useCallback(() => {
@@ -34,19 +36,31 @@ export default function Editor({
   }, []);
 
   const handleSelectionChange = useCallback(() => {
-    if (!textareaRef.current || !onSelectionChange) return;
+    if (!textareaRef.current) return;
 
     const { selectionStart, selectionEnd } = textareaRef.current;
-    if (selectionStart !== selectionEnd) {
-      onSelectionChange({
-        text: value.substring(selectionStart, selectionEnd),
-        start: selectionStart,
-        end: selectionEnd,
-      });
+    const hasText = selectionStart !== selectionEnd;
+    setHasSelection(hasText);
+
+    if (hasText && onAITrigger) {
+      // Show hint when text is selected and AI is available
+      setShowAIHint(true);
     } else {
-      onSelectionChange(null);
+      setShowAIHint(false);
     }
-  }, [value, onSelectionChange]);
+
+    if (onSelectionChange) {
+      if (hasText) {
+        onSelectionChange({
+          text: value.substring(selectionStart, selectionEnd),
+          start: selectionStart,
+          end: selectionEnd,
+        });
+      } else {
+        onSelectionChange(null);
+      }
+    }
+  }, [value, onSelectionChange, onAITrigger]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -57,6 +71,7 @@ export default function Editor({
 
         const { selectionStart, selectionEnd } = textareaRef.current;
         if (selectionStart !== selectionEnd) {
+          setShowAIHint(false);
           const rect = textareaRef.current.getBoundingClientRect();
           onAITrigger({
             x: rect.left + rect.width / 2 - 190,
@@ -124,9 +139,12 @@ export default function Editor({
           <div className="w-2.5 h-2.5 rounded-full bg-green-500/20 group-hover:bg-green-500/80 transition-colors duration-300" />
         </div>
         <div className="ml-4 text-xs font-mono text-slate-500">resume.tex</div>
-        <div className="ml-auto text-[10px] text-slate-600 font-mono">
-          Ctrl+K to edit with AI
-        </div>
+        {onAITrigger && (
+          <div className="ml-auto flex items-center gap-2 text-[10px] text-slate-500 font-mono">
+            <Sparkles size={10} className="text-sky-400" />
+            <span>Select text + <kbd className="px-1 py-0.5 bg-white/10 rounded text-[9px]">Ctrl</kbd>+<kbd className="px-1 py-0.5 bg-white/10 rounded text-[9px]">K</kbd> for AI</span>
+          </div>
+        )}
       </div>
 
       {/* Editor container */}
@@ -158,6 +176,21 @@ export default function Editor({
           spellCheck={false}
         />
       </div>
+
+      {/* AI Hint Tooltip - shows when text is selected */}
+      {showAIHint && onAITrigger && !error && !highlightText && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 animate-fade-in">
+          <div className="flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-sky-500/20 to-indigo-500/20 backdrop-blur-xl border border-sky-500/30 rounded-xl shadow-lg shadow-sky-500/10">
+            <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-sky-500 to-indigo-500 rounded-lg">
+              <Sparkles size={16} className="text-white" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-white">Edit with AI</span>
+              <span className="text-xs text-slate-400">Press <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-sky-300 font-mono">Ctrl+K</kbd> to transform selected text</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Highlight indicator */}
       {highlightText && value.includes(highlightText) && (

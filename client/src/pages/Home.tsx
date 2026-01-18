@@ -98,6 +98,9 @@ export default function Home() {
                         <Link to="/templates" className="hidden sm:block text-sm text-slate-400 hover:text-white transition-colors">
                             Templates
                         </Link>
+                        <Link to="/ats-score" className="hidden sm:block text-sm text-slate-400 hover:text-white transition-colors">
+                            ATS Score
+                        </Link>
                         <Link
                             to="/login"
                             className="px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors"
@@ -363,6 +366,7 @@ export default function Home() {
                         </div>
                         <div className="flex items-center gap-6 text-sm text-slate-500">
                             <Link to="/templates" className="hover:text-white transition-colors">Templates</Link>
+                            <Link to="/ats-score" className="hover:text-white transition-colors">ATS Score</Link>
                             <Link to="/login" className="hover:text-white transition-colors">Sign In</Link>
                             <Link to="/signup" className="hover:text-white transition-colors">Get Started</Link>
                         </div>

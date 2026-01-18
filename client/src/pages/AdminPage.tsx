@@ -14,12 +14,14 @@ import {
     User,
     Loader2,
     Save,
+    Upload,
 } from "lucide-react";
 
 interface Template {
     id: string;
     name: string;
     content: string;
+    clsContent?: string | null;
     description: string | null;
     isActive: boolean;
     createdAt: string;
@@ -54,7 +56,9 @@ export default function AdminPage() {
     // Template form state
     const [showTemplateForm, setShowTemplateForm] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
-    const [templateForm, setTemplateForm] = useState({ name: "", content: "", description: "" });
+    const [templateForm, setTemplateForm] = useState({ name: "", content: "", clsContent: "", description: "" });
+    const [selectedImage, setSelectedImage] = useState<File | null>(null);
+    const [zipFile, setZipFile] = useState<File | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
     // Check access
@@ -110,16 +114,63 @@ export default function AdminPage() {
     const handleSaveTemplate = async () => {
         setIsSaving(true);
         try {
+            // First upload image if selected
+            if (selectedImage && templateForm.name) {
+                const formData = new FormData();
+                formData.append("file", selectedImage);
+                formData.append("templateName", templateForm.name);
+
+                const uploadRes = await fetch("/api/admin/templates/upload-image", {
+                    method: "POST",
+                    body: formData, // Browser handles Content-Type for FormData
+                    credentials: "include",
+                });
+
+                if (!uploadRes.ok) {
+                    throw new Error("Failed to upload image");
+                }
+            }
+
             const url = editingTemplate
                 ? `/api/admin/templates/${editingTemplate.id}`
                 : "/api/admin/templates";
             const method = editingTemplate ? "PUT" : "POST";
 
+            // If creating (POST) and we have a ZIP, usage FormData
+            let body: any;
+            let headers: any = {};
+
+            if (!editingTemplate && zipFile) {
+                // ZIP Create Mode
+                const formData = new FormData();
+                formData.append("name", templateForm.name);
+                formData.append("description", templateForm.description);
+                formData.append("zipFile", zipFile);
+                body = formData;
+                // No Content-Type header (browser sets boundary)
+            } else if (!editingTemplate) {
+                // Manual Create Mode (JSON) (Actually, let's just usage FormData for everything new to be consistent? 
+                // No, backend expects JSON unless zipFile is present?
+                // My backend change: checks body.zipFile. Since Bun/Elysia handles body parsing, 
+                // if I send JSON, zipFile is undefined.
+                // But wait, if I send FormData, fields are in body too.
+                // Let's safe bet: usage FormData for creation if ZIP present, else JSON.
+                // But actually, I changed backend to `body as { ... zipFile ... }`. 
+                // If I send FormData without zipFile, is it parsed correctly?
+                // Yes, but let's stick to JSON for manual text entry to avoid boundary issues if simple text.
+                body = JSON.stringify(templateForm);
+                headers = { "Content-Type": "application/json" };
+            } else {
+                // Edit Mode (JSON)
+                body = JSON.stringify(templateForm);
+                headers = { "Content-Type": "application/json" };
+            }
+
             const res = await fetch(url, {
                 method,
-                headers: { "Content-Type": "application/json" },
+                headers,
                 credentials: "include",
-                body: JSON.stringify(templateForm),
+                body,
             });
 
             const data = await res.json();
@@ -127,12 +178,15 @@ export default function AdminPage() {
                 loadTemplates();
                 setShowTemplateForm(false);
                 setEditingTemplate(null);
-                setTemplateForm({ name: "", content: "", description: "" });
+                setTemplateForm({ name: "", content: "", clsContent: "", description: "" });
+                setSelectedImage(null);
+                setZipFile(null);
             } else {
                 alert(data.error);
             }
-        } catch {
-            alert("Failed to save template");
+        } catch (err: any) {
+            console.error(err);
+            alert(err.message || "Failed to save template");
         } finally {
             setIsSaving(false);
         }
@@ -271,7 +325,7 @@ export default function AdminPage() {
                             <button
                                 onClick={() => {
                                     setEditingTemplate(null);
-                                    setTemplateForm({ name: "", content: "", description: "" });
+                                    setTemplateForm({ name: "", content: "", clsContent: "", description: "" });
                                     setShowTemplateForm(true);
                                 }}
                                 className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white text-sm font-medium rounded-lg transition-colors"
@@ -297,41 +351,54 @@ export default function AdminPage() {
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2">
-                                                    <h3 className="text-white font-medium">{template.name}</h3>
-                                                    {!template.isActive && (
-                                                        <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded">
-                                                            Inactive
-                                                        </span>
+                                                    <div className="w-12 h-16 bg-slate-700 rounded overflow-hidden flex-shrink-0">
+                                                        <img
+                                                            src={`/api/images/templates/${template.name}`}
+                                                            alt={template.name}
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                e.currentTarget.style.display = 'none';
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-white font-medium">{template.name}</h3>
+                                                        {!template.isActive && (
+                                                            <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded">
+                                                                Inactive
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {template.description && (
+                                                        <p className="text-sm text-slate-400 mt-1">{template.description}</p>
                                                     )}
+                                                    <p className="text-xs text-slate-500 mt-2">
+                                                        {template.content.length} characters
+                                                    </p>
                                                 </div>
-                                                {template.description && (
-                                                    <p className="text-sm text-slate-400 mt-1">{template.description}</p>
-                                                )}
-                                                <p className="text-xs text-slate-500 mt-2">
-                                                    {template.content.length} characters
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => {
-                                                        setEditingTemplate(template);
-                                                        setTemplateForm({
-                                                            name: template.name,
-                                                            content: template.content,
-                                                            description: template.description || "",
-                                                        });
-                                                        setShowTemplateForm(true);
-                                                    }}
-                                                    className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteTemplate(template.id)}
-                                                    className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingTemplate(template);
+                                                            setTemplateForm({
+                                                                name: template.name,
+                                                                content: template.content,
+                                                                clsContent: template.clsContent || "",
+                                                                description: template.description || "",
+                                                            });
+                                                            setShowTemplateForm(true);
+                                                        }}
+                                                        className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                                                    >
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteTemplate(template.id)}
+                                                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </motion.div>
@@ -461,9 +528,76 @@ export default function AdminPage() {
                                         type="text"
                                         value={templateForm.name}
                                         onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
-                                        className="w-full bg-slate-700 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
-                                        placeholder="Template name"
                                     />
+                                    <p className="text-xs text-slate-500 mt-1">
+                                        This name will be used to link the preview image (e.g., "{templateForm.name || 'Template Name'}.png")
+                                        <br />
+                                        Expected Class Name: <span className="text-sky-400 font-mono">{templateForm.name ? templateForm.name.replace(/[^a-zA-Z0-9]/g, "") : "TemplateName"}.cls</span>
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm text-slate-400 mb-1">Preview Image</label>
+                                    <div className="flex items-center gap-3">
+                                        <label className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 border border-white/10 rounded-lg cursor-pointer transition-colors text-sm text-slate-300">
+                                            <Upload size={16} />
+                                            {selectedImage ? selectedImage.name : "Choose Image"}
+                                            <input
+                                                type="file"
+                                                accept="image/png"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    if (e.target.files?.[0]) {
+                                                        setSelectedImage(e.target.files[0]);
+                                                    }
+                                                }}
+                                            />
+                                        </label>
+                                        {selectedImage && (
+                                            <button
+                                                onClick={() => setSelectedImage(null)}
+                                                className="text-xs text-red-400 hover:text-red-300"
+                                            >
+                                                Remove
+                                            </button>
+                                        )}
+                                        <p className="text-xs text-slate-500">
+                                            Supports PNG. Will be saved as [Template Name].png
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm text-slate-400 mb-1">Template ZIP (Optional)</label>
+                                    <div className="flex items-center gap-3">
+                                        <label className={`flex items-center gap-2 px-3 py-2 ${zipFile ? 'bg-sky-500/20 text-sky-400 border-sky-500/50' : 'bg-slate-700 hover:bg-slate-600 border-white/10 text-slate-300'} border rounded-lg cursor-pointer transition-colors text-sm`}>
+                                            <Upload size={16} />
+                                            {zipFile ? zipFile.name : "Upload ZIP"}
+                                            <input
+                                                type="file"
+                                                accept=".zip"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    if (e.target.files?.[0]) {
+                                                        setZipFile(e.target.files[0]);
+                                                    }
+                                                }}
+                                            />
+                                        </label>
+                                        {zipFile && (
+                                            <button
+                                                onClick={() => setZipFile(null)}
+                                                className="text-xs text-red-400 hover:text-red-300"
+                                            >
+                                                Remove
+                                            </button>
+                                        )}
+                                        <p className="text-xs text-slate-500">
+                                            Must contain <code>main.tex</code> and optional <code>.cls</code> files.
+                                            <br />
+                                            <span className="text-yellow-500/80">Overrides text fields below.</span>
+                                        </p>
+                                    </div>
                                 </div>
 
                                 <div>
@@ -474,6 +608,17 @@ export default function AdminPage() {
                                         onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
                                         className="w-full bg-slate-700 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
                                         placeholder="Optional description"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm text-slate-400 mb-1">LaTeX Class Content (.cls)</label>
+                                    <textarea
+                                        value={templateForm.clsContent}
+                                        onChange={(e) => setTemplateForm({ ...templateForm, clsContent: e.target.value })}
+                                        rows={10}
+                                        className="w-full bg-slate-700 border border-white/10 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+                                        placeholder="Optional .cls file content..."
                                     />
                                 </div>
 
@@ -498,7 +643,7 @@ export default function AdminPage() {
                                 </button>
                                 <button
                                     onClick={handleSaveTemplate}
-                                    disabled={isSaving || !templateForm.name || !templateForm.content}
+                                    disabled={isSaving || !templateForm.name || (!templateForm.content && !zipFile)}
                                     className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
                                 >
                                     {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
